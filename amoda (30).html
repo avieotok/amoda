@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>amoda — מיפוי מחסן</title>
+
+<!-- כאן נשמר המידע שלך כשלוחצים "שמור HTML". אל תמחק את השורה הזאת. -->
+<script id="saved-data" type="application/json">{"saved":"","rows":[]}</script>
+<style>
+  :root{
+    --ink:#12161c;
+    --panel:#1b2029;
+    --line:#2c3440;
+    --paper:#eef1f4;
+    --muted:#8b97a6;
+    --mark:#ffc400;
+    --ok:#3ddc84;
+    --bad:#ff6b5e;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:var(--ink);color:var(--paper);
+    font-family:"Rubik","Segoe UI",Arial,sans-serif;min-height:100vh;
+  }
+  .wrap{max-width:1000px;margin:0 auto;padding:24px 18px 60px}
+
+  header{
+    display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;
+    border-bottom:3px solid var(--mark);padding-bottom:12px;margin-bottom:20px;
+  }
+  header h1{
+    margin:0;font-size:30px;letter-spacing:.5px;
+    font-family:ui-monospace,"Courier New",monospace;text-transform:uppercase;
+  }
+  header span{color:var(--muted);font-size:14px}
+  #status{margin-inline-start:auto;font-size:13px;color:var(--muted)}
+  #status.dirty{color:var(--mark)}
+
+  .last{
+    display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;
+    background:var(--panel);border:1px solid var(--line);
+    border-inline-start:5px solid var(--mark);
+    border-radius:10px;padding:12px 18px;margin-bottom:16px;
+  }
+  .last .lbl{color:var(--muted);font-size:13px}
+  .last .big{
+    font-family:ui-monospace,"Courier New",monospace;font-size:28px;
+    color:var(--mark);font-weight:700;direction:ltr;line-height:1.1;
+  }
+  .last .meta{color:var(--muted);font-size:14px}
+
+  .stage{
+    background:var(--panel);border:1px solid var(--line);
+    border-radius:10px;padding:22px;margin-bottom:22px;
+  }
+
+  .steps{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+  .step{
+    flex:1;min-width:120px;border:1px solid var(--line);border-radius:8px;
+    padding:8px 12px;font-size:13px;color:var(--muted);background:var(--ink);
+  }
+  .step.active{border-color:var(--mark);color:var(--paper)}
+  .step.active .num{background:var(--mark);color:#181818}
+  .step .num{
+    display:inline-block;width:20px;height:20px;line-height:20px;text-align:center;
+    border-radius:50%;background:var(--line);color:var(--muted);
+    font-size:12px;margin-left:6px;font-weight:700;
+  }
+  .step .val{
+    display:block;font-family:ui-monospace,monospace;color:var(--mark);
+    font-size:15px;margin-top:4px;min-height:18px;direction:ltr;text-align:right;
+  }
+
+  .q{font-size:20px;margin:0 0 14px}
+  .q b{color:var(--mark);font-family:ui-monospace,monospace}
+  .hint{color:var(--muted);font-size:13px;margin-top:10px}
+
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  input[type=text],input[type=number]{
+    flex:1;min-width:180px;background:var(--ink);
+    border:2px solid var(--line);border-radius:8px;color:var(--paper);
+    font-size:24px;padding:12px 14px;font-family:ui-monospace,"Courier New",monospace;
+    text-align:center;direction:ltr;
+  }
+  input.rtl{direction:rtl;font-family:inherit;font-size:20px}
+  input:focus{outline:none;border-color:var(--mark)}
+  button{
+    background:var(--mark);color:#181818;border:0;border-radius:8px;
+    font-size:17px;font-weight:700;padding:12px 22px;cursor:pointer;font-family:inherit;
+  }
+  button:hover{filter:brightness(1.08)}
+  button.ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}
+  button.ghost:hover{color:var(--paper);border-color:var(--muted)}
+  button:focus-visible{outline:3px solid #fff;outline-offset:2px}
+
+  .preview{margin-top:16px;display:flex;gap:8px;flex-wrap:wrap}
+  .chip{
+    background:var(--ink);border:1px dashed var(--line);border-radius:6px;
+    padding:6px 12px;font-family:ui-monospace,monospace;font-size:16px;color:var(--mark);
+  }
+
+  table{width:100%;border-collapse:collapse;margin-top:8px}
+  th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:right;font-size:15px}
+  th{color:var(--muted);font-weight:500;font-size:13px}
+  td.code{font-family:ui-monospace,monospace;direction:ltr;text-align:right}
+  td.codes{color:var(--muted);font-family:ui-monospace,monospace;font-size:13px;direction:ltr;text-align:right}
+  .del{background:transparent;border:0;color:var(--bad);font-size:20px;cursor:pointer;padding:0 6px}
+
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .chips:empty{margin:0}
+  .chips .dchip{
+    background:var(--ink);border:1px solid var(--line);border-radius:20px;
+    color:var(--paper);font-size:15px;padding:8px 14px;cursor:pointer;font-family:inherit;
+  }
+  .chips .dchip:hover{border-color:var(--mark);color:var(--mark)}
+  .chips .dchip.none{color:var(--muted)}
+
+  .edit-on{border-color:var(--ok)!important}
+  .editbtn{background:transparent;border:0;color:var(--mark);font-size:17px;cursor:pointer;padding:0 6px}
+  tr.editing{background:rgba(61,220,132,.08)}
+
+  .bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:18px}
+  .count{color:var(--muted);font-size:14px}
+  .count b{color:var(--ok);font-size:18px}
+  .empty{color:var(--muted);padding:22px 0;text-align:center}
+  .note{color:var(--muted);font-size:13px;line-height:1.8;margin-top:16px;border-top:1px solid var(--line);padding-top:14px}
+  .tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:6px}
+  .tools input{
+    flex:1;min-width:160px;background:var(--ink);border:2px solid var(--line);
+    border-radius:8px;color:var(--paper);font-size:16px;padding:10px 12px;
+    font-family:inherit;text-align:right;
+  }
+  .tools input:focus{outline:none;border-color:var(--mark)}
+  .tools select{
+    background:var(--ink);color:var(--paper);border:2px solid var(--line);
+    border-radius:8px;padding:10px 12px;font-size:15px;font-family:inherit;
+  }
+
+  #printArea{display:none}
+  @media print{
+    body{background:#fff;color:#000}
+    body > .wrap, .toast{display:none!important}
+    #printArea{
+      display:grid!important;grid-template-columns:repeat(3,1fr);gap:4mm;
+      padding:6mm;direction:rtl;
+    }
+    .label{
+      border:1px solid #999;border-radius:2mm;padding:3mm 2mm;text-align:center;
+      break-inside:avoid;page-break-inside:avoid;
+    }
+    .label .lcode{font-family:"Courier New",monospace;font-size:20pt;font-weight:700;letter-spacing:1px}
+    .label .lbc{display:block;width:100%;height:14mm;margin:2mm 0 1mm}
+    .label .ldesc{font-size:9pt;color:#333;min-height:11pt}
+  }
+
+  .toast{
+    position:fixed;bottom:20px;right:50%;transform:translateX(50%);
+    background:var(--ok);color:#0d1410;padding:12px 22px;border-radius:8px;
+    font-weight:700;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90vw;text-align:center
+  }
+  .toast.on{opacity:1}
+  .toast.err{background:var(--bad);color:#2a0f0c}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>amoda</h1>
+    <span>מיפוי עמודות ומדפים במחסן</span>
+    <span id="status">עבודה חדשה</span>
+  </header>
+
+  <div class="last" id="last">
+    <span class="lbl">העמודה האחרונה שהוקשה</span>
+    <span class="big" id="lastCol">—</span>
+    <span class="meta" id="lastMeta">עוד לא הוקשה עמודה</span>
+  </div>
+
+  <div class="stage">
+    <div class="steps">
+      <div class="step" id="s1"><span class="num">1</span>מספר עמודה<span class="val" id="v1"></span></div>
+      <div class="step" id="s2"><span class="num">2</span>כמות מדפים<span class="val" id="v2"></span></div>
+      <div class="step" id="s3"><span class="num">3</span>תאור המיקום<span class="val" id="v3"></span></div>
+    </div>
+
+    <p class="q" id="question">מה מספר העמודה?</p>
+    <div class="row">
+      <input id="field" type="text" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="42A">
+      <button id="go">Enter</button>
+      <button id="back" class="ghost" style="display:none">חזרה</button>
+      <button id="cancelEdit" class="ghost" style="display:none">בטל עריכה</button>
+      <button id="heToggle" class="ghost" style="display:none">כתיבה בעברית: פועל</button>
+    </div>
+    <div class="preview" id="preview"></div>
+    <div class="chips" id="descChips"></div>
+    <p class="hint" id="hint">כתוב מספר עמודה ולחץ Enter</p>
+  </div>
+
+  <div class="stage">
+    <div class="tools">
+      <input id="search" type="text" class="rtl" placeholder="חיפוש עמודה או תאור" autocomplete="off">
+      <select id="sort">
+        <option value="added">סדר הקשה</option>
+        <option value="col">לפי מספר עמודה</option>
+        <option value="shelves">לפי כמות מדפים</option>
+      </select>
+      <button id="labels" class="ghost">מדבקות להדפסה</button>
+    </div>
+    <table id="tbl">
+      <thead>
+        <tr><th>עמודה</th><th>מדפים</th><th>תאור המיקום</th><th>קודים</th><th></th></tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="empty" id="empty">עדיין לא הוספת עמודות</div>
+
+    <div class="bar">
+      <div class="count">סה"כ <b id="total">0</b> מדפים ב־<b id="cols">0</b> עמודות</div>
+      <div class="row" style="flex:0">
+        <button id="clear" class="ghost">נקה הכל</button>
+        <button id="upload" class="ghost">העלה קובץ אקסל</button>
+        <button id="saveHtml" class="ghost">שמור HTML</button>
+        <button id="shareBtn">קישור להמשך עבודה</button>
+        <button id="export">הורד amoda.xlsx</button>
+      </div>
+    </div>
+    <input type="file" id="picker" accept=".xlsx" style="display:none">
+
+    <p class="note">
+      <b>המשך עבודה במכשיר אחר</b> — לחץ "קישור להמשך עבודה" ושלח את הקישור לעצמך בוואטסאפ או במייל.
+      פתיחת הקישור בכל מכשיר טוענת את כל הרשימה מיד, בלי סיסמה ובלי הרשמה.
+      <br>
+      <b>באותו מכשיר</b> הרשימה נשמרת לבד בדפדפן — סגרת בטעות, נגמרה הסוללה, פתחת שוב את הכתובת: הכל חוזר.
+      <br>
+      <b>טווח עמודות</b> — במקום עמודה בודדת אפשר להקיש טווח: <b>42A-45A</b> יוצר ארבע עמודות,
+      ו-<b>1A-8B</b> יוצר את כל הבלוק (1A, 1B, 2A, 2B … 8B). כמות המדפים והתאור שתקיש אחר כך חלים על כולן.
+      <br>
+      <b>חיפוש ומיון</b> — שדה החיפוש מסנן את הטבלה תוך כדי הקלדה (לפי מספר עמודה או תאור),
+      והמיון קובע גם את הסדר בקובץ האקסל שיורד.
+      <b>0 מדפים</b> — עמודה בלי מדפים נרשמת בקוד שלה בלבד, למשל 9C ולא 9C1.
+      <b>מדבקות להדפסה</b> — מדפיס מדבקה לכל מיקום עם ברקוד Code 128 שכל סורק קורא. אם החיפוש פעיל, מודפסות רק התוצאות המסוננות.
+      <br>
+      <b>עדכון שורה</b> — ✎ ליד עמודה מחזיר אותה לשלושת השלבים למעלה ומעדכן במקום. ✕ מוחק שורה, ו"נקה הכל" מוגן בסיסמה.
+      <br>
+      <b>הורד amoda.xlsx</b> — קובץ האקסל לעבודה ולהדפסה, ואפשר להחזיר אותו לכאן דרך "העלה קובץ אקסל".
+      <b>שמור HTML</b> — עותק של הדף עם הנתונים בתוכו, לגיבוי ולרשימות ארוכות מאוד.
+      <br>
+      קובץ האקסל מכיל שתי עמודות: קוד מיקום ותאור המיקום, כשבתוך הקוד מספר העמודה בשחור ומספר המדף בכחול.
+    </p>
+  </div>
+
+</div>
+<div id="printArea"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+
+/* ================= ZIP + XLSX (מובנה, בלי ספריות) ================= */
+var CRC_TABLE = (function(){
+  var t = new Uint32Array(256), c, n, k;
+  for (n=0;n<256;n++){ c=n; for(k=0;k<8;k++) c = (c & 1) ? (0xEDB88320 ^ (c>>>1)) : (c>>>1); t[n]=c>>>0; }
+  return t;
+})();
+function crc32(u8){
+  var c = 0xFFFFFFFF;
+  for (var i=0;i<u8.length;i++) c = CRC_TABLE[(c ^ u8[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+function enc(s){ return new TextEncoder().encode(s); }
+function esc(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function unesc(s){
+  return s.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"')
+          .replace(/&apos;/g,"'").replace(/&#(\d+);/g, function(_,d){ return String.fromCharCode(+d); })
+          .replace(/&amp;/g,'&');
+}
+
+function zipStore(files){
+  var parts = [], central = [], offset = 0;
+  files.forEach(function(f){
+    var name = enc(f.name), body = f.data, crc = crc32(body);
+    var lh = new Uint8Array(30 + name.length), dv = new DataView(lh.buffer);
+    dv.setUint32(0, 0x04034b50, true);
+    dv.setUint16(4, 20, true); dv.setUint16(6, 0x0800, true);
+    dv.setUint32(14, crc, true);
+    dv.setUint32(18, body.length, true); dv.setUint32(22, body.length, true);
+    dv.setUint16(26, name.length, true);
+    lh.set(name, 30);
+    parts.push(lh, body);
+
+    var ch = new Uint8Array(46 + name.length), cv = new DataView(ch.buffer);
+    cv.setUint32(0, 0x02014b50, true);
+    cv.setUint16(4, 20, true); cv.setUint16(6, 20, true); cv.setUint16(8, 0x0800, true);
+    cv.setUint32(16, crc, true);
+    cv.setUint32(20, body.length, true); cv.setUint32(24, body.length, true);
+    cv.setUint16(28, name.length, true);
+    cv.setUint32(42, offset, true);
+    ch.set(name, 46);
+    central.push(ch);
+    offset += lh.length + body.length;
+  });
+  var cdSize = central.reduce(function(a,b){ return a + b.length; }, 0);
+  var eocd = new Uint8Array(22), ev = new DataView(eocd.buffer);
+  ev.setUint32(0, 0x06054b50, true);
+  ev.setUint16(8, files.length, true); ev.setUint16(10, files.length, true);
+  ev.setUint32(12, cdSize, true); ev.setUint32(16, offset, true);
+
+  var all = parts.concat(central, [eocd]);
+  var total = all.reduce(function(a,b){ return a + b.length; }, 0);
+  var out = new Uint8Array(total), p = 0;
+  all.forEach(function(u){ out.set(u, p); p += u.length; });
+  return out;
+}
+
+function buildXlsx(data){
+  var strings = [], sidx = {};
+  function plain(text){
+    var key = 'p\u0000' + text;
+    if (!(key in sidx)){ sidx[key] = strings.length; strings.push('<si><t xml:space="preserve">'+esc(text)+'</t></si>'); }
+    return sidx[key];
+  }
+  function rich(colTxt, shelfTxt){
+    var key = 'r\u0000' + colTxt + '\u0000' + shelfTxt;
+    if (!(key in sidx)){
+      sidx[key] = strings.length;
+      strings.push('<si>' +
+        '<r><rPr><b/><color rgb="FF000000"/><sz val="11"/><rFont val="Calibri"/></rPr><t xml:space="preserve">'+esc(colTxt)+'</t></r>' +
+        '<r><rPr><b/><color rgb="FF0070C0"/><sz val="11"/><rFont val="Calibri"/></rPr><t xml:space="preserve">'+esc(shelfTxt)+'</t></r>' +
+        '</si>');
+    }
+    return sidx[key];
+  }
+
+  var rowsXml = [];
+  rowsXml.push('<row r="1" ht="20" customHeight="1">' +
+    ['קוד מיקום','תאור המיקום'].map(function(h,i){
+      return '<c r="'+String.fromCharCode(65+i)+'1" s="4" t="s"><v>'+plain(h)+'</v></c>';
+    }).join('') + '</row>');
+
+  var r = 1;
+  data.forEach(function(d){
+    if (!d.shelves){
+      r++;
+      rowsXml.push('<row r="'+r+'">' +
+        '<c r="A'+r+'" s="1" t="s"><v>'+plain(d.col)+'</v></c>' +
+        (d.desc ? '<c r="B'+r+'" s="3" t="s"><v>'+plain(d.desc)+'</v></c>' : '') +
+        '</row>');
+      return;
+    }
+    for (var i=1;i<=d.shelves;i++){
+      r++;
+      rowsXml.push('<row r="'+r+'">' +
+        '<c r="A'+r+'" s="1" t="s"><v>'+rich(d.col, String(i))+'</v></c>' +
+        (d.desc ? '<c r="B'+r+'" s="3" t="s"><v>'+plain(d.desc)+'</v></c>' : '') +
+        '</row>');
+    }
+  });
+
+  var sheet =
+'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+'<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+'<sheetViews><sheetView rightToLeft="1" tabSelected="1" workbookViewId="0">' +
+'<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>' +
+'<cols><col min="1" max="1" width="18" customWidth="1"/><col min="2" max="2" width="34" customWidth="1"/></cols>' +
+'<sheetData>' + rowsXml.join('') + '</sheetData>' +
+'<autoFilter ref="A1:B'+r+'"/></worksheet>';
+
+  var sst = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+'<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="'+strings.length+'" uniqueCount="'+strings.length+'">' +
+strings.join('') + '</sst>';
+
+  var styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+'<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+'<fonts count="4">' +
+'<font><sz val="11"/><color rgb="FF000000"/><name val="Calibri"/></font>' +
+'<font><b/><sz val="11"/><color rgb="FF000000"/><name val="Calibri"/></font>' +
+'<font><b/><sz val="11"/><color rgb="FF0070C0"/><name val="Calibri"/></font>' +
+'<font><sz val="11"/><color rgb="FF444444"/><name val="Calibri"/></font>' +
+'</fonts>' +
+'<fills count="3"><fill><patternFill patternType="none"/></fill>' +
+'<fill><patternFill patternType="gray125"/></fill>' +
+'<fill><patternFill patternType="solid"><fgColor rgb="FFEDEDED"/><bgColor indexed="64"/></patternFill></fill></fills>' +
+'<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border>' +
+'<border><left/><right/><top/><bottom style="thin"><color rgb="FF999999"/></bottom><diagonal/></border></borders>' +
+'<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+'<cellXfs count="5">' +
+'<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
+'<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>' +
+'<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center"/></xf>' +
+'<xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1"/>' +
+'<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>' +
+'</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
+
+  return zipStore([
+    {name:'[Content_Types].xml', data: enc('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+'<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+'<Default Extension="xml" ContentType="application/xml"/>' +
+'<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+'<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
+'<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
+'<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>' +
+'</Types>')},
+    {name:'_rels/.rels', data: enc('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' +
+'</Relationships>')},
+    {name:'xl/workbook.xml', data: enc('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+'<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+'<sheets><sheet name="amoda" sheetId="1" r:id="rId1"/></sheets></workbook>')},
+    {name:'xl/_rels/workbook.xml.rels', data: enc('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' +
+'<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
+'<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/>' +
+'</Relationships>')},
+    {name:'xl/styles.xml', data: enc(styles)},
+    {name:'xl/sharedStrings.xml', data: enc(sst)},
+    {name:'xl/worksheets/sheet1.xml', data: enc(sheet)}
+  ]);
+}
+
+async function unzip(u8){
+  var dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength), eocd = -1;
+  for (var i = u8.length - 22; i >= 0 && i > u8.length - 66000; i--){
+    if (dv.getUint32(i, true) === 0x06054b50){ eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error('zip');
+  var count = dv.getUint16(eocd + 10, true), p = dv.getUint32(eocd + 16, true), out = {};
+  for (var n = 0; n < count; n++){
+    var nameLen = dv.getUint16(p + 28, true), extraLen = dv.getUint16(p + 30, true),
+        cmtLen = dv.getUint16(p + 32, true), method = dv.getUint16(p + 10, true),
+        cSize = dv.getUint32(p + 20, true), lOff = dv.getUint32(p + 42, true);
+    var name = new TextDecoder().decode(u8.subarray(p + 46, p + 46 + nameLen));
+    var start = lOff + 30 + dv.getUint16(lOff + 26, true) + dv.getUint16(lOff + 28, true);
+    var raw = u8.subarray(start, start + cSize);
+    if (method === 8){
+      var stream = new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+      out[name] = new Uint8Array(await new Response(stream).arrayBuffer());
+    } else {
+      out[name] = raw;
+    }
+    p += 46 + nameLen + extraLen + cmtLen;
+  }
+  return out;
+}
+
+function sharedStrings(xml){
+  var out = [], re = /<si\b[^>]*>([\s\S]*?)<\/si>/g, m;
+  while ((m = re.exec(xml))){
+    var txt = '', tre = /<t\b[^>]*>([\s\S]*?)<\/t>/g, t;
+    while ((t = tre.exec(m[1]))) txt += unesc(t[1]);
+    out.push(txt);
+  }
+  return out;
+}
+function sheetGrid(xml, sst){
+  var grid = {}, rre = /<row\b[^>]*\br="(\d+)"[^>]*>([\s\S]*?)<\/row>/g, rm;
+  while ((rm = rre.exec(xml))){
+    var line = {}, cre = /<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g, cm;
+    while ((cm = cre.exec(rm[2]))){
+      var attrs = cm[1] || '', inner = cm[2] || '';
+      var ref = (attrs.match(/\br="([A-Z]+)\d+"/) || [])[1];
+      if (!ref) continue;
+      var type = (attrs.match(/\bt="([^"]+)"/) || [])[1] || 'n', val = '';
+      if (type === 'inlineStr'){
+        var itre = /<t\b[^>]*>([\s\S]*?)<\/t>/g, it;
+        while ((it = itre.exec(inner))) val += unesc(it[1]);
+      } else {
+        var v = (inner.match(/<v>([\s\S]*?)<\/v>/) || [])[1];
+        if (v === undefined) continue;
+        val = (type === 's') ? (sst[+v] || '') : unesc(v);
+      }
+      line[ref] = val;
+    }
+    grid[+rm[1]] = line;
+  }
+  return grid;
+}
+async function readXlsx(u8){
+  var zip = await unzip(u8), dec = new TextDecoder();
+  var sheetKey = Object.keys(zip).filter(function(k){ return /^xl\/worksheets\/sheet\d+\.xml$/.test(k); })[0];
+  if (!sheetKey) throw new Error('sheet');
+  var sst = zip['xl/sharedStrings.xml'] ? sharedStrings(dec.decode(zip['xl/sharedStrings.xml'])) : [];
+  var grid = sheetGrid(dec.decode(zip[sheetKey]), sst);
+
+  var header = grid[1] || {}, colOf = {};
+  Object.keys(header).forEach(function(letter){
+    var h = String(header[letter]).trim();
+    if (h.indexOf('עמודה') === 0) colOf.col = letter;
+    else if (h.indexOf('מדף') === 0) colOf.shelf = letter;
+    else if (h.indexOf('תאור') === 0 || h.indexOf('תיאור') === 0) colOf.desc = letter;
+    else if (h.indexOf('קוד') === 0) colOf.code = letter;
+  });
+  if (!colOf.col && !colOf.code){ colOf.code = 'A'; colOf.col = 'B'; colOf.shelf = 'C'; colOf.desc = 'D'; }
+
+  var map = {}, order = [];
+  Object.keys(grid).map(Number).sort(function(a,b){ return a-b; }).forEach(function(rn){
+    if (rn === 1) return;
+    var row = grid[rn];
+    var col = colOf.col ? String(row[colOf.col] || '').trim() : '';
+    var shelf = colOf.shelf ? (parseInt(row[colOf.shelf], 10) || 0) : 0;
+    var desc = colOf.desc ? String(row[colOf.desc] || '').trim() : '';
+    if ((!col || !shelf) && colOf.code){
+      var raw = String(row[colOf.code] || '').trim();
+      var m2 = raw.match(/^(.*?)(\d+)$/);
+      if (m2){ col = col || m2[1]; shelf = shelf || parseInt(m2[2], 10); }
+      else if (raw){ col = col || raw; }
+    }
+    if (!col) return;
+    col = col.toUpperCase();
+    if (!map[col]){ map[col] = {col: col, shelves: 0, desc: ''}; order.push(col); }
+    if (shelf > map[col].shelves) map[col].shelves = shelf;
+    if (desc && !map[col].desc) map[col].desc = desc;
+  });
+  return order.map(function(c){ return map[c]; });
+}
+
+/* ================= האפליקציה ================= */
+  var data = [];
+  var draft = {col:'', shelves:0, desc:'', list:null};
+  var step = 1, dirty = false;
+  var savedStamp = '';
+  var lastShelves = null;
+  var lastDesc = '';
+
+  try {
+    var stored = JSON.parse((document.getElementById('saved-data') || {}).textContent || '{}');
+    if (stored && Array.isArray(stored.rows)) data = stored.rows;
+    savedStamp = stored.saved || '';
+    lastShelves = isNaN(parseInt(stored.lastShelves, 10)) ? (data.length ? data[data.length-1].shelves : null) : parseInt(stored.lastShelves, 10);
+    lastDesc = (typeof stored.lastDesc === 'string') ? stored.lastDesc
+             : (data.length ? (data[data.length-1].desc || '') : '');
+  } catch(e){ data = []; }
+
+  var field = document.getElementById('field');
+  var question = document.getElementById('question');
+  var hint = document.getElementById('hint');
+  var preview = document.getElementById('preview');
+  var backBtn = document.getElementById('back');
+  var cancelBtn = document.getElementById('cancelEdit');
+  var statusEl = document.getElementById('status');
+  var picker = document.getElementById('picker');
+
+  var editIndex = -1;
+  var PASSWORD = '30172';
+
+  function codesFor(col, n){
+    if (!n) return [col];
+    var out = [];
+    for (var i=1;i<=n;i++) out.push(col + i);
+    return out;
+  }
+  function markDirty(){
+    dirty = true;
+    statusEl.classList.add('dirty');
+    statusEl.textContent = 'יש שינויים שלא הורדו לאקסל';
+    saveLocal();
+  }
+  function markClean(when){
+    dirty = false;
+    statusEl.classList.remove('dirty');
+    statusEl.textContent = when;
+  }
+  function paintSteps(){
+    [1,2,3].forEach(function(i){
+      document.getElementById('s'+i).classList.toggle('active', step === i);
+    });
+    document.getElementById('v1').textContent = rangeOn()
+      ? (draft.list[0] + '–' + draft.list[draft.list.length-1] + ' (' + draft.list.length + ')')
+      : (draft.col || '');
+    document.getElementById('v2').textContent = draft.shelves ? draft.shelves + ' מדפים' : '';
+    document.getElementById('v3').textContent = draft.desc || '';
+  }
+  function rangeOn(){ return !!(draft.list && draft.list.length > 1); }
+
+  function showCodes(n){
+    var items;
+    if (rangeOn()){
+      items = draft.list.map(function(c){ return n ? c + '1…' + c + n : c; });
+    } else {
+      items = codesFor(draft.col, n);
+    }
+    if (items.length > 12){
+      items = items.slice(0,8).concat(['…'], items.slice(-2));
+    }
+    preview.innerHTML = items.map(function(c){ return '<span class="chip">'+esc(c)+'</span>'; }).join('');
+  }
+  function ask(n){
+    step = n;
+    preview.innerHTML = '';
+    backBtn.style.display = (n === 1) ? 'none' : 'inline-block';
+    cancelBtn.style.display = (editIndex >= 0) ? 'inline-block' : 'none';
+    field.classList.toggle('edit-on', editIndex >= 0);
+    var editing = editIndex >= 0;
+    var prefill = '';
+
+    if (n === 1){
+      if (!editing) draft = {col:'', shelves:0, desc:'', list:null};
+      question.innerHTML = editing
+        ? 'עריכה — מה מספר העמודה? <b>' + (data[editIndex] ? data[editIndex].col : '') + '</b>'
+        : 'מה מספר העמודה?';
+      hint.textContent = editing ? 'שנה את המספר או Enter כדי להשאיר'
+                                 : 'מספר עמודה ו-Enter — או טווח, למשל 1A-8B';
+      if (!editing) draft.list = null;
+      field.className = ''; field.inputMode = 'text'; field.placeholder = '42A';
+      field.setAttribute('lang','en');
+      field.setAttribute('autocapitalize','characters');
+      if (editing) prefill = draft.col;
+    } else if (n === 2){
+      question.innerHTML = rangeOn()
+        ? 'כמה מדפים בכל אחת מ-<b>' + draft.list.length + '</b> העמודות?'
+        : 'כמה מדפים יש בעמודה <b>' + draft.col + '</b>?';
+      field.className = ''; field.inputMode = 'numeric'; field.placeholder = '3';
+      field.setAttribute('lang','en');
+      field.setAttribute('autocapitalize','off');
+      var shown = editing ? draft.shelves : lastShelves;
+      if (shown){
+        prefill = String(shown);
+        hint.textContent = 'מוצג ' + shown + (editing ? ' — Enter מאשר, או הקש מספר אחר'
+                                                     : ' מהפעם הקודמת — Enter מאשר, או הקש מספר אחר');
+        showCodes(shown);
+      } else if (shown === 0){
+        hint.textContent = 'הפעם הקודמת הייתה בלי מדפים — Enter מאשר, או הקש מספר';
+        showCodes(0);
+      } else {
+        hint.textContent = 'כתוב מספר ולחץ Enter — Enter ריק לעמודה בלי מדפים';
+      }
+    } else {
+      question.innerHTML = rangeOn()
+        ? 'מה תאור המיקום של <b>' + draft.list.length + '</b> העמודות?'
+        : 'מה תאור המיקום של <b>' + draft.col + '</b>?';
+      field.className = 'rtl'; field.inputMode = 'text'; field.placeholder = 'למשל: מעבר צפוני, ליד הרמפה';
+      field.setAttribute('lang','he');
+      field.setAttribute('autocapitalize','off');
+      showCodes(draft.shelves);
+      var d = editing ? draft.desc : lastDesc;
+      if (d){
+        prefill = d;
+        hint.textContent = 'מוצג התאור הקודם — Enter מאשר. מחק את השדה ו-Enter כדי לשמור בלי תאור';
+      } else {
+        hint.textContent = 'אפשר להשאיר את המקלדת באנגלית — הקש כרגיל וייכתב בעברית';
+      }
+    }
+
+    field.value = prefill;
+    field.classList.toggle('edit-on', editing);
+    paintSteps();
+    paintDescChips();
+    paintHeToggle();
+    field.focus();
+    if (prefill) field.select();
+  }
+
+  function livePreview(){
+    if (step !== 2) return;
+    var raw = field.value.trim();
+    var n = parseInt(raw, 10);
+    if (raw === '' || isNaN(n) || n < 0 || n > 300){ preview.innerHTML = ''; return; }
+    showCodes(n);
+  }
+
+  function submit(){
+    var v = field.value.trim();
+    var editing = editIndex >= 0;
+
+    if (step === 1){
+      if (!v){ hint.textContent = 'צריך למלא מספר עמודה'; return; }
+
+      var list = editing ? null : expandRange(v);
+      if (list){
+        var fresh = list.filter(function(c){
+          return !data.some(function(d){ return d.col.toUpperCase() === c; });
+        });
+        if (!fresh.length){ hint.textContent = 'כל העמודות בטווח כבר קיימות ברשימה'; return; }
+        draft.list = fresh;
+        draft.col = fresh[0];
+        var skipped = list.length - fresh.length;
+        ask(2);
+        hint.textContent = 'טווח של ' + fresh.length + ' עמודות' +
+          (skipped ? ' (' + skipped + ' כבר היו ברשימה)' : '') + ' — כמה מדפים בכל אחת?';
+        return;
+      }
+
+      var up = v.toUpperCase();
+      var clash = data.some(function(d, i){ return i !== editIndex && d.col.toUpperCase() === up; });
+      if (clash){ hint.textContent = 'העמודה ' + v + ' כבר קיימת ברשימה'; return; }
+      draft.list = null;
+      draft.col = up; ask(2);
+
+    } else if (step === 2){
+      var n;
+      if (!v){
+        n = editing ? draft.shelves : lastShelves;
+        if (n === null || n === undefined) n = 0;
+      } else {
+        n = parseInt(v, 10);
+      }
+      if (isNaN(n) || n < 0){ hint.textContent = 'צריך מספר מדפים (0 ומעלה)'; return; }
+      draft.shelves = n;
+      if (!editing) lastShelves = n;
+      ask(3);
+
+    } else {
+      draft.desc = v;
+      var msg;
+      if (editing){
+        data[editIndex] = {col:draft.col, shelves:draft.shelves, desc:draft.desc};
+        msg = 'עמודה ' + draft.col + ' עודכנה. הבאה בתור:';
+        editIndex = -1;
+      } else if (draft.list && draft.list.length > 1){
+        lastDesc = v;
+        draft.list.forEach(function(c){
+          data.push({col:c, shelves:draft.shelves, desc:draft.desc});
+        });
+        msg = 'נוספו ' + draft.list.length + ' עמודות: ' +
+              draft.list[0] + ' עד ' + draft.list[draft.list.length-1] + '. הבאה בתור:';
+      } else {
+        lastDesc = v;
+        data.push({col:draft.col, shelves:draft.shelves, desc:draft.desc});
+        msg = 'נוספה עמודה ' + draft.col + (draft.shelves ? ' (' + draft.shelves + ' מדפים)' : ' (בלי מדפים)') + '. הבאה בתור:';
+      }
+      render(); markDirty();
+      ask(1); hint.textContent = msg;
+    }
+  }
+
+  function startEdit(idx){
+    editIndex = idx;
+    draft = {col: data[idx].col, shelves: data[idx].shelves, desc: data[idx].desc || '', list:null};
+    render();
+    ask(1);
+    hint.textContent = 'עריכת ' + data[idx].col + ' — עבור עם Enter בין השדות ושנה מה שצריך';
+  }
+  function cancelEdit(){
+    editIndex = -1;
+    render();
+    ask(1);
+    hint.textContent = 'העריכה בוטלה. שום דבר לא השתנה';
+  }
+  function render(){
+    var tbody = document.getElementById('tbody');
+    tbody.innerHTML = '';
+    var total = data.reduce(function(a,d){ return a + d.shelves; }, 0);
+    var rows = viewIdx();
+
+    rows.forEach(function(idx){
+      var d = data[idx];
+      var codes = codesFor(d.col, d.shelves);
+      var short = codes.length > 5 ? codes.slice(0,3).join(', ') + ' … ' + codes[codes.length-1] : codes.join(', ');
+      var tr = document.createElement('tr');
+      if (idx === editIndex) tr.className = 'editing';
+      tr.innerHTML =
+        '<td class="code">'+esc(d.col)+'</td>' +
+        '<td>'+(d.shelves || '—')+'</td>' +
+        '<td>'+(esc(d.desc||'') || '—')+'</td>' +
+        '<td class="codes">'+esc(short)+'</td>' +
+        '<td style="width:74px;white-space:nowrap">' +
+          '<button class="editbtn" title="עדכן">✎</button>' +
+          '<button class="del" title="מחק">✕</button>' +
+        '</td>';
+      tr.querySelector('.editbtn').onclick = function(){ startEdit(idx); };
+      tr.querySelector('.del').onclick = function(){
+        if (!confirm('למחוק את עמודה ' + d.col + '?')) return;
+        data.splice(idx,1);
+        if (editIndex === idx) editIndex = -1;
+        else if (editIndex > idx) editIndex--;
+        render(); markDirty(); ask(1);
+      };
+      tbody.appendChild(tr);
+    });
+
+    var filtering = rows.length !== data.length;
+    document.getElementById('empty').style.display = rows.length ? 'none' : 'block';
+    document.getElementById('empty').textContent = data.length
+      ? 'אין עמודה שמתאימה לחיפוש'
+      : 'עדיין לא הוספת עמודות';
+    document.getElementById('tbl').style.display = rows.length ? 'table' : 'none';
+    document.getElementById('total').textContent = total;
+    document.getElementById('cols').textContent = filtering
+      ? (rows.length + ' מתוך ' + data.length)
+      : data.length;
+
+    var lastCol = document.getElementById('lastCol');
+    var lastMeta = document.getElementById('lastMeta');
+    if (data.length){
+      var L = data[data.length-1];
+      var lc = codesFor(L.col, L.shelves);
+      lastCol.textContent = L.col;
+      lastMeta.textContent = (L.shelves
+          ? L.shelves + ' מדפים · ' + lc[0] + '–' + lc[lc.length-1]
+          : 'בלי מדפים · ' + lc[0]) +
+        (L.desc ? ' · ' + L.desc : '');
+    } else {
+      lastCol.textContent = '—';
+      lastMeta.textContent = 'עוד לא הוקשה עמודה';
+    }
+  }
+  function toast(msg, bad){
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.toggle('err', !!bad);
+    t.classList.add('on');
+    setTimeout(function(){ t.classList.remove('on'); }, 2800);
+  }
+  function download(blob, name){
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  }
+
+  /* ---------- שמירה אוטומטית במכשיר + קישור להמשך ---------- */
+  function packState(){
+    return {
+      s: stamp(),
+      n: lastShelves,
+      t: lastDesc,
+      r: data.map(function(d){ return [d.col, d.shelves, d.desc || '']; })
+    };
+  }
+  function unpackState(o){
+    if (!o || !Array.isArray(o.r)) return false;
+    data = o.r.map(function(a){
+      return {col:String(a[0]), shelves:(isNaN(parseInt(a[1],10)) ? 0 : parseInt(a[1],10)), desc:String(a[2]||'')};
+    });
+    lastShelves = isNaN(parseInt(o.n,10)) ? (data.length ? data[data.length-1].shelves : null) : parseInt(o.n,10);
+    lastDesc = typeof o.t === 'string' ? o.t : '';
+    return true;
+  }
+  function saveLocal(){
+    try { localStorage.setItem('amoda.state', JSON.stringify(packState())); } catch(e){}
+  }
+  function loadLocal(){
+    try {
+      var raw = localStorage.getItem('amoda.state');
+      if (!raw) return null;
+      var o = JSON.parse(raw);
+      return (o && Array.isArray(o.r)) ? o : null;
+    } catch(e){ return null; }
+  }
+  function b64url(str){
+    var u8 = new TextEncoder().encode(str), s = '';
+    for (var i=0;i<u8.length;i++) s += String.fromCharCode(u8[i]);
+    return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  }
+  function unb64url(b){
+    var s = b.replace(/-/g,'+').replace(/_/g,'/');
+    while (s.length % 4) s += '=';
+    var bin = atob(s), u8 = new Uint8Array(bin.length);
+    for (var i=0;i<bin.length;i++) u8[i] = bin.charCodeAt(i);
+    return new TextDecoder().decode(u8);
+  }
+  function shareLink(){
+    if (!data.length){ toast('אין מה לשתף — הרשימה ריקה', true); return; }
+    var url = location.href.split('#')[0] + '#d=' + b64url(JSON.stringify(packState()));
+    if (url.length > 30000){ toast('הרשימה ארוכה מדי לקישור — השתמש ב"שמור HTML"', true); return; }
+    if (navigator.share){
+      navigator.share({title:'amoda', text:'המשך עבודה במחסן', url:url})
+        .then(function(){ toast('הקישור נשלח'); })
+        .catch(function(){});
+      return;
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(url)
+        .then(function(){ toast('הקישור הועתק — שלח אותו לעצמך'); })
+        .catch(function(){ prompt('העתק את הקישור:', url); });
+    } else {
+      prompt('העתק את הקישור:', url);
+    }
+  }
+  document.getElementById('shareBtn').onclick = shareLink;
+
+  /* ---------- חיפוש, מיון ומדבקות ---------- */
+  var searchEl = document.getElementById('search');
+  var sortEl = document.getElementById('sort');
+
+  function natKey(s){
+    return String(s).toUpperCase().replace(/\d+/g, function(n){ return n.padStart(8,'0'); });
+  }
+  function sortedIdx(){
+    var idx = data.map(function(_, i){ return i; });
+    var mode = sortEl.value;
+    if (mode === 'col'){
+      idx.sort(function(a,b){ return natKey(data[a].col) < natKey(data[b].col) ? -1 : 1; });
+    } else if (mode === 'shelves'){
+      idx.sort(function(a,b){ return data[b].shelves - data[a].shelves; });
+    }
+    return idx;
+  }
+  function viewIdx(){
+    var q = searchEl.value.trim().toUpperCase();
+    return sortedIdx().filter(function(i){
+      if (!q) return true;
+      var d = data[i];
+      return d.col.toUpperCase().indexOf(q) >= 0 || String(d.desc||'').toUpperCase().indexOf(q) >= 0;
+    });
+  }
+  function sortedData(){
+    return sortedIdx().map(function(i){ return data[i]; });
+  }
+
+  /* Code 128B — נבדק מול מקודד תקני */
+  var C128 = ["212222","222122","222221","121223","121322","131222","122213","122312","132212","221213",
+  "221312","231212","112232","122132","122231","113222","123122","123221","223211","221132",
+  "221231","213212","223112","312131","311222","321122","321221","312212","322112","322211",
+  "212123","212321","232121","111323","131123","131321","112313","132113","132311","211313",
+  "231113","231311","112133","112331","132131","113123","113321","133121","313121","211331",
+  "231131","213113","213311","213131","311123","311321","331121","312113","312311","332111",
+  "314111","221411","431111","111224","111422","121124","121421","141122","141221","112214",
+  "112412","122114","122411","142112","142211","241211","221114","413111","241112","134111",
+  "111242","121142","121241","114212","124112","124211","411212","421112","421211","212141",
+  "214121","412121","111143","111341","131141","114113","114311","411113","411311","113141",
+  "114131","311141","411131","211412","211214","211232","2331112"];
+
+  function code128bits(text){
+    var vals = [104], sum = 104;
+    for (var i=0;i<text.length;i++){
+      var v = text.charCodeAt(i) - 32;
+      if (v < 0 || v > 94) v = 31;
+      vals.push(v); sum += v * (i + 1);
+    }
+    vals.push(sum % 103); vals.push(106);
+    var bits = '';
+    vals.forEach(function(v){
+      var pat = C128[v], on = true;
+      for (var j=0;j<pat.length;j++){
+        bits += new Array((+pat[j]) + 1).join(on ? '1' : '0');
+        on = !on;
+      }
+    });
+    return bits;
+  }
+  function barcodeSvg(text){
+    var bits = code128bits(text), rects = '', x = 0;
+    while (x < bits.length){
+      if (bits[x] === '1'){
+        var w = 1;
+        while (bits[x+w] === '1') w++;
+        rects += '<rect x="'+x+'" y="0" width="'+w+'" height="100" fill="#000"/>';
+        x += w;
+      } else x++;
+    }
+    return '<svg class="lbc" viewBox="0 0 '+bits.length+' 100" preserveAspectRatio="none">'+rects+'</svg>';
+  }
+
+  function printLabels(){
+    var rows = viewIdx();
+    if (!rows.length){ toast('אין מיקומים להדפסה', true); return; }
+    var count = rows.reduce(function(a,i){ return a + (data[i].shelves || 1); }, 0);
+    if (count > 600 && !confirm('עומדות להיות מודפסות ' + count + ' מדבקות. להמשיך?')) return;
+
+    var html = '';
+    rows.forEach(function(i){
+      var d = data[i];
+      codesFor(d.col, d.shelves).forEach(function(code){
+        html += '<div class="label">' +
+                  '<div class="lcode">' + esc(code) + '</div>' +
+                  barcodeSvg(code) +
+                  '<div class="ldesc">' + esc(d.desc || '') + '</div>' +
+                '</div>';
+      });
+    });
+    document.getElementById('printArea').innerHTML = html;
+    toast('נשלח להדפסה — ' + count + ' מדבקות');
+    setTimeout(function(){ window.print(); }, 120);
+  }
+
+  searchEl.addEventListener('input', render);
+  sortEl.addEventListener('change', render);
+  document.getElementById('labels').onclick = printLabels;
+
+  var descChips = document.getElementById('descChips');
+
+  function paintDescChips(){
+    if (step !== 3){ descChips.innerHTML = ''; return; }
+    var seen = {}, list = [];
+    for (var i = data.length - 1; i >= 0 && list.length < 6; i--){
+      var t = (data[i].desc || '').trim();
+      if (!t || seen[t]) continue;
+      seen[t] = 1; list.push(t);
+    }
+    var html = list.map(function(t){
+      return '<button type="button" class="dchip" data-t="'+esc(t)+'">'+esc(t)+'</button>';
+    }).join('');
+    html += '<button type="button" class="dchip none" data-t="">בלי תאור</button>';
+    descChips.innerHTML = html;
+  }
+
+  descChips.addEventListener('click', function(e){
+    var b = e.target.closest('.dchip');
+    if (!b) return;
+    field.value = b.getAttribute('data-t');
+    submit();
+  });
+
+  /* ---------- כתיבה בעברית ממקלדת אנגלית ---------- */
+  var heToggle = document.getElementById('heToggle');
+  var HE_MAP = {
+    q:'/', w:"'", e:'ק', r:'ר', t:'א', y:'ט', u:'ו', i:'ן', o:'ם', p:'פ',
+    a:'ש', s:'ד', d:'ג', f:'כ', g:'ע', h:'י', j:'ח', k:'ל', l:'ך', ';':'ף', "'":',',
+    z:'ז', x:'ס', c:'ב', v:'ה', b:'נ', n:'מ', m:'צ', ',':'ת', '.':'ץ', '/':'.'
+  };
+  var heOn = recallFlag('amoda.he', true);
+
+  function recallFlag(key, dflt){
+    try {
+      var v = localStorage.getItem(key);
+      return v === null ? dflt : v === '1';
+    } catch(e){ return dflt; }
+  }
+  function paintHeToggle(){
+    heToggle.style.display = (step === 3) ? 'inline-block' : 'none';
+    heToggle.textContent = 'כתיבה בעברית: ' + (heOn ? 'פועל' : 'כבוי');
+    heToggle.style.borderColor = heOn ? 'var(--mark)' : '';
+    heToggle.style.color = heOn ? 'var(--mark)' : '';
+  }
+  heToggle.onclick = function(){
+    heOn = !heOn;
+    try { localStorage.setItem('amoda.he', heOn ? '1' : '0'); } catch(e){}
+    paintHeToggle();
+    hint.textContent = heOn
+      ? 'המקלדת יכולה להישאר באנגלית — הקש כרגיל וייכתב בעברית'
+      : 'ההמרה כבויה — מה שתקיש ייכתב כמו שהוא';
+    field.focus();
+  };
+
+  field.addEventListener('keydown', function(e){
+    if (step !== 3 || !heOn) return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (!e.key || e.key.length !== 1) return;
+    var he = HE_MAP[e.key.toLowerCase()];
+    if (!he) return;
+    e.preventDefault();
+    var s = field.selectionStart, t = field.selectionEnd, val = field.value;
+    field.value = val.slice(0, s) + he + val.slice(t);
+    field.selectionStart = field.selectionEnd = s + he.length;
+  });
+
+  /* ---------- טווח עמודות ---------- */
+  function parseToken(t){
+    t = t.trim().toUpperCase();
+    var m = t.match(/^(\d+)([A-Z]?)$/);
+    if (m) return {order:'na', num:parseInt(m[1],10), alpha:m[2], width:m[1].length};
+    m = t.match(/^([A-Z])(\d*)$/);
+    if (m) return {order:'an', alpha:m[1], num:m[2] === '' ? null : parseInt(m[2],10), width:m[2].length};
+    return null;
+  }
+  function expandRange(text){
+    var parts = text.split(/\s*(?:\.\.|עד|-|–)\s*/).filter(function(x){ return x !== ''; });
+    if (parts.length !== 2) return null;
+    var a = parseToken(parts[0]), b = parseToken(parts[1]);
+    if (!a || !b || a.order !== b.order) return null;
+
+    var nums = [], alphas = [];
+    if (a.num === null || b.num === null){
+      if (a.num !== b.num) return null;
+      nums = [null];
+    } else {
+      var lo = Math.min(a.num, b.num), hi = Math.max(a.num, b.num);
+      if (hi - lo > 400) return null;
+      for (var n = lo; n <= hi; n++) nums.push(n);
+    }
+
+    if (!a.alpha && !b.alpha){
+      alphas = [''];
+    } else if (!a.alpha || !b.alpha){
+      return null;
+    } else {
+      var c1 = a.alpha.charCodeAt(0), c2 = b.alpha.charCodeAt(0);
+      var la = Math.min(c1,c2), lb = Math.max(c1,c2);
+      for (var c = la; c <= lb; c++) alphas.push(String.fromCharCode(c));
+    }
+
+    var pad = Math.max(a.width, b.width);
+    function num2s(n){
+      var s = String(n);
+      while (s.length < pad) s = '0' + s;
+      return s;
+    }
+
+    var out = [];
+    nums.forEach(function(n){
+      alphas.forEach(function(al){
+        out.push(a.order === 'na' ? (n === null ? al : num2s(n) + al)
+                                  : (n === null ? al : al + num2s(n)));
+      });
+    });
+    if (out.length < 2 || out.length > 500) return null;
+    return out;
+  }
+
+  function stamp(){
+
+    var now = new Date();
+    return now.toLocaleDateString('he-IL') + ' ' +
+           now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+  }
+
+  function saveHtml(){
+    try {
+      var when = stamp();
+      var clone = document.documentElement.cloneNode(true);
+      clone.querySelector('#tbody').innerHTML = '';
+      clone.querySelector('#preview').innerHTML = '';
+      var pa = clone.querySelector('#printArea'); if (pa) pa.innerHTML = '';
+      var sf = clone.querySelector('#search'); if (sf) sf.removeAttribute('value');
+      var f = clone.querySelector('#field'); if (f) f.removeAttribute('value');
+      clone.querySelector('#saved-data').textContent = JSON.stringify({saved: when, rows: data, lastShelves: lastShelves, lastDesc: lastDesc});
+      download(new Blob(['<!DOCTYPE html>\n' + clone.outerHTML], {type:'text/html;charset=utf-8'}), 'amoda.html');
+      markClean('נשמר: ' + when);
+      toast('amoda.html ירד — המשך לעבוד מהקובץ החדש');
+    } catch(e){ toast('השמירה נכשלה. נסה שוב', true); }
+  }
+
+  function exportXlsx(){
+    if (!data.length){ toast('אין נתונים לייצוא', true); return; }
+    try {
+      var bytes = buildXlsx(sortedData());
+      download(new Blob([bytes], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), 'amoda.xlsx');
+      var now = new Date();
+      markClean('ירד לאקסל: ' + stamp());
+      toast('הקובץ amoda.xlsx ירד למחשב');
+    } catch(e){ toast('הייצוא נכשל. נסה שוב', true); }
+  }
+
+  function importXlsx(file){
+    var reader = new FileReader();
+    reader.onload = function(){
+      readXlsx(new Uint8Array(reader.result)).then(function(rows){
+        if (!rows.length){ toast('לא נמצאו עמודות בקובץ', true); return; }
+        var added = 0, skipped = 0;
+        rows.forEach(function(r){
+          if (data.some(function(d){ return d.col === r.col; })) { skipped++; return; }
+          data.push(r); added++;
+        });
+        render();
+        if (data.length) lastShelves = data[data.length-1].shelves;
+        if (data.length) lastDesc = data[data.length-1].desc || '';
+        if (added) markDirty();
+        toast('נטענו ' + added + ' עמודות' + (skipped ? ' · ' + skipped + ' כבר היו ברשימה' : ''));
+        ask(1);
+      }).catch(function(){
+        toast('לא הצלחתי לקרוא את הקובץ. צריך קובץ xlsx עם עמודות עמודה ומדף', true);
+      });
+    };
+    reader.onerror = function(){ toast('קריאת הקובץ נכשלה', true); };
+    reader.readAsArrayBuffer(file);
+  }
+
+  document.getElementById('go').onclick = submitOnce;
+  backBtn.onclick = function(){ ask(step === 3 ? 2 : 1); };
+  document.getElementById('export').onclick = exportXlsx;
+  document.getElementById('saveHtml').onclick = saveHtml;
+  document.getElementById('upload').onclick = function(){ picker.click(); };
+  picker.onchange = function(){
+    if (picker.files && picker.files[0]) importXlsx(picker.files[0]);
+    picker.value = '';
+  };
+  document.getElementById('clear').onclick = function(){
+    if (!data.length){ toast('הרשימה כבר ריקה'); return; }
+    var pw = prompt('מחיקת כל הרשימה — הקש סיסמה:');
+    if (pw === null) return;
+    if (pw.trim() !== PASSWORD){ toast('סיסמה שגויה. שום דבר לא נמחק', true); return; }
+    if (!confirm('אישור אחרון: למחוק את כל ' + data.length + ' העמודות?')) return;
+    data = []; editIndex = -1; render(); markDirty(); ask(1);
+    try { localStorage.removeItem('amoda.state'); } catch(e){}
+    toast('הרשימה נוקתה');
+  };
+  cancelBtn.onclick = cancelEdit;
+  var submitting = false;
+  function submitOnce(){
+    if (submitting) return;      // מונע כפילות מאותה הקשה, לא מהקשה מהירה חוזרת
+    submitting = true;
+    try { submit(); } finally { submitting = false; }
+  }
+  function isEnter(e){
+    return e.key === 'Enter' || e.key === 'Go' || e.key === 'Done' || e.key === 'Next' ||
+           e.keyCode === 13 || e.which === 13;
+  }
+
+  // הקשה על Enter תופסת גם אם הפוקוס ברח מהשדה
+  document.addEventListener('keydown', function(e){
+    if (!isEnter(e)) return;
+    var t = e.target;
+    if (t === searchEl) return;                       // Enter בחיפוש לא שומר עמודה
+    if (t && t.tagName === 'BUTTON' && t !== document.getElementById('go')) return;
+    e.preventDefault();
+    submitOnce();
+  }, true);
+
+  field.addEventListener('input', livePreview);
+  window.addEventListener('beforeunload', function(e){
+    if (dirty){ e.preventDefault(); e.returnValue = ''; }
+  });
+
+  var restored = '';
+  try {
+    var hash = location.hash || '';
+    var m = hash.match(/[#&]d=([A-Za-z0-9\-_]+)/);
+    if (m && unpackState(JSON.parse(unb64url(m[1])))){
+      restored = 'link';
+      history.replaceState(null, '', location.pathname + location.search);
+      saveLocal();
+    }
+  } catch(e){}
+
+  if (!restored){
+    var local = loadLocal();
+    if (local && (!data.length || local.r.length) && unpackState(local)) restored = 'local';
+  }
+
+  render();
+  if (restored === 'link'){
+    markClean('נטען מהקישור — ' + data.length + ' עמודות');
+    toast('הרשימה נטענה מהקישור');
+  } else if (restored === 'local'){
+    markClean('נטען מהמכשיר הזה — ' + data.length + ' עמודות');
+  } else if (savedStamp){
+    markClean('נשמר: ' + savedStamp);
+  }
+  ask(1);
+})();
+</script>
+</body>
+</html>
