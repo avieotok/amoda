@@ -1,0 +1,2036 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>amoda — מיפוי מחסן</title>
+
+<!-- כאן נשמר המידע שלך כשלוחצים "שמור HTML". אל תמחק את השורה הזאת. -->
+<script id="saved-data" type="application/json">{"saved":"","rows":[]}</script>
+<style>
+  :root{
+    --ink:#12161c;
+    --panel:#1b2029;
+    --line:#2c3440;
+    --paper:#eef1f4;
+    --muted:#8b97a6;
+    --mark:#ffc400;
+    --ok:#3ddc84;
+    --bad:#ff6b5e;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:var(--ink);color:var(--paper);
+    font-family:"Rubik","Segoe UI",Arial,sans-serif;min-height:100vh;
+  }
+  .wrap{max-width:1000px;margin:0 auto;padding:24px 18px 60px}
+
+  header{
+    display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;
+    border-bottom:3px solid var(--mark);padding-bottom:12px;margin-bottom:20px;
+  }
+  header h1{
+    margin:0;font-size:30px;letter-spacing:.5px;
+    font-family:ui-monospace,"Courier New",monospace;text-transform:uppercase;
+  }
+  header span{color:var(--muted);font-size:14px}
+  #status{margin-inline-start:auto;font-size:13px;color:var(--muted)}
+  #status.dirty{color:var(--mark)}
+
+  .last{
+    display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;
+    background:var(--panel);border:1px solid var(--line);
+    border-inline-start:5px solid var(--mark);
+    border-radius:10px;padding:12px 18px;margin-bottom:16px;
+  }
+  .last .lbl{color:var(--muted);font-size:13px}
+  .last .big{
+    font-family:ui-monospace,"Courier New",monospace;font-size:28px;
+    color:var(--mark);font-weight:700;direction:ltr;line-height:1.1;
+  }
+  .last .meta{color:var(--muted);font-size:14px}
+
+  .stage{
+    background:var(--panel);border:1px solid var(--line);
+    border-radius:10px;padding:22px;margin-bottom:22px;
+  }
+
+  .steps{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+  .step{
+    flex:1;min-width:120px;border:1px solid var(--line);border-radius:8px;
+    padding:8px 12px;font-size:13px;color:var(--muted);background:var(--ink);
+  }
+  .step.active{border-color:var(--mark);color:var(--paper)}
+  .step.active .num{background:var(--mark);color:#181818}
+  .step .num{
+    display:inline-block;width:20px;height:20px;line-height:20px;text-align:center;
+    border-radius:50%;background:var(--line);color:var(--muted);
+    font-size:12px;margin-left:6px;font-weight:700;
+  }
+  .step .val{
+    display:block;font-family:ui-monospace,monospace;color:var(--mark);
+    font-size:15px;margin-top:4px;min-height:18px;direction:ltr;text-align:right;
+  }
+
+  .q{font-size:20px;margin:0 0 14px}
+  .q b{color:var(--mark);font-family:ui-monospace,monospace}
+  .hint{color:var(--muted);font-size:13px;margin-top:10px}
+
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  input[type=text],input[type=number]{
+    flex:1;min-width:180px;background:var(--ink);
+    border:2px solid var(--line);border-radius:8px;color:var(--paper);
+    font-size:24px;padding:12px 14px;font-family:ui-monospace,"Courier New",monospace;
+    text-align:center;direction:ltr;
+  }
+  input.rtl{direction:rtl;font-family:inherit;font-size:20px}
+  input:focus{outline:none;border-color:var(--mark)}
+  button{
+    background:var(--mark);color:#181818;border:0;border-radius:8px;
+    font-size:17px;font-weight:700;padding:12px 22px;cursor:pointer;font-family:inherit;
+  }
+  button:hover{filter:brightness(1.08)}
+  button.ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}
+  button.ghost:hover{color:var(--paper);border-color:var(--muted)}
+  button:focus-visible{outline:3px solid #fff;outline-offset:2px}
+
+  .preview{margin-top:16px;display:flex;gap:8px;flex-wrap:wrap}
+  .chip{
+    background:var(--ink);border:1px dashed var(--line);border-radius:6px;
+    padding:6px 12px;font-family:ui-monospace,monospace;font-size:16px;color:var(--mark);
+  }
+
+  table{width:100%;border-collapse:collapse;margin-top:8px}
+  th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:right;font-size:15px}
+  th{color:var(--muted);font-weight:500;font-size:13px}
+  td.code{font-family:ui-monospace,monospace;direction:ltr;text-align:right}
+  td.codes{color:var(--muted);font-family:ui-monospace,monospace;font-size:13px;direction:ltr;text-align:right}
+  .del{background:transparent;border:0;color:var(--bad);font-size:20px;cursor:pointer;padding:0 6px}
+
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .chips:empty{margin:0}
+  .chips .dchip{
+    background:var(--ink);border:1px solid var(--line);border-radius:20px;
+    color:var(--paper);font-size:15px;padding:8px 14px;cursor:pointer;font-family:inherit;
+  }
+  .chips .dchip:hover{border-color:var(--mark);color:var(--mark)}
+  .chips .dchip.none{color:var(--muted)}
+
+  .edit-on{border-color:var(--ok)!important}
+  .editbtn{background:transparent;border:0;color:var(--mark);font-size:17px;cursor:pointer;padding:0 6px}
+  tr.editing{background:rgba(61,220,132,.08)}
+
+  .bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:18px}
+  .count{color:var(--muted);font-size:14px}
+  .count b{color:var(--ok);font-size:18px}
+  .empty{color:var(--muted);padding:22px 0;text-align:center}
+  .note{color:var(--muted);font-size:13px;line-height:1.8;margin-top:16px;border-top:1px solid var(--line);padding-top:14px}
+  .tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:6px}
+  .tools input{
+    flex:1;min-width:160px;background:var(--ink);border:2px solid var(--line);
+    border-radius:8px;color:var(--paper);font-size:16px;padding:10px 12px;
+    font-family:inherit;text-align:right;
+  }
+  .tools input:focus{outline:none;border-color:var(--mark)}
+  .tools select{
+    background:var(--ink);color:var(--paper);border:2px solid var(--line);
+    border-radius:8px;padding:10px 12px;font-size:15px;font-family:inherit;
+  }
+
+  .modal{
+    position:fixed;inset:0;background:rgba(5,8,12,.72);
+    display:flex;align-items:center;justify-content:center;padding:18px;z-index:50;
+  }
+  .modal[hidden]{display:none}
+  .modal .card{
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:22px;width:min(560px,100%);max-height:90vh;overflow:auto;
+  }
+  .modal h3{margin:0 0 14px;font-size:19px}
+  .modal .card.mapcard{width:min(1100px,100%)}
+  .maphint{color:var(--muted);font-size:13px;margin:0 0 12px}
+  .floors{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+  .fbtn{
+    background:var(--ink);color:var(--muted);border:1px solid var(--line);
+    border-radius:8px;padding:9px 18px;font-size:15px;font-family:inherit;cursor:pointer;
+  }
+  .fbtn.sel{background:var(--mark);color:#181818;border-color:var(--mark);font-weight:700}
+  .fnote{color:var(--muted);font-size:13px}
+  .maplayout{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+  .tray{flex:0 0 190px;max-height:58vh;overflow:auto}
+  .traytitle{color:var(--muted);font-size:13px;margin-bottom:8px}
+  .tray .dchip{font-family:ui-monospace,monospace;padding:7px 12px;font-size:14px}
+  .tray .dchip.sel{background:var(--mark);color:#181818;border-color:var(--mark)}
+  .mapwrap{
+    flex:1;min-width:280px;max-height:58vh;overflow:auto;
+    background:#0d1117;border:1px solid var(--line);border-radius:8px;
+  }
+  #mapSvg{display:block;touch-action:none;-webkit-user-select:none;user-select:none}
+  .blk rect{fill:#2b3442;stroke:#4b5666;stroke-width:1;cursor:grab}
+  .blk.sel rect{fill:#4a3c10;stroke:var(--mark);stroke-width:2}
+  .blk text{fill:#eef1f4;font-family:ui-monospace,monospace;font-size:11px;pointer-events:none}
+  .blk .grip{fill:var(--mark);cursor:nwse-resize}
+  .wall{stroke:#c9d4e3;stroke-width:5;stroke-linecap:round;cursor:pointer}
+  .wall:hover{stroke:var(--bad)}
+  .wallghost{stroke:var(--mark);stroke-width:5;stroke-linecap:round;opacity:.8;pointer-events:none}
+  #mapSvg.wallmode .blk rect{cursor:default}
+  .printbtn{background:transparent;border:0;color:var(--paper);font-size:16px;cursor:pointer;padding:0 6px}
+  .printbtn:hover{color:var(--mark)}
+
+  #printArea,#signArea{display:none}
+  @page{margin:10mm}
+  @media print{
+    body{background:#fff;color:#000}
+    body > .wrap, .toast, .modal{display:none!important}
+    body.sign-mode #printArea{display:none!important}
+    body.sign-mode #signArea{display:block!important}
+    .sign{
+      page-break-after:always;break-after:page;
+      height:184mm;display:flex;flex-direction:column;align-items:center;
+      justify-content:flex-start;text-align:center;direction:rtl;
+    }
+    .sign:last-child{page-break-after:auto;break-after:auto}
+    .sign header{width:100%;text-align:right;margin-bottom:3mm}
+    .sign header img{height:34mm}
+    .signcode{
+      font-family:"Arial Black",Arial,sans-serif;font-weight:900;
+      font-size:150pt;line-height:1;letter-spacing:2px;margin:2mm 0;
+    }
+    .signdesc{font-size:28pt;margin-bottom:4mm;min-height:30pt}
+    .signcodes{
+      margin-top:auto;width:100%;display:flex;justify-content:center;align-items:flex-end;
+    }
+    .qrwrap .qr{width:50mm;height:50mm}
+
+    /* מדבקה בגודל פיזי קבוע: 100×50 מ"מ בדיוק, על כל נייר */
+    body.label-mode .sign.labelsign{
+      height:50mm;width:100mm;display:block;padding:0;margin:0;
+      overflow:hidden;break-inside:avoid;page-break-inside:avoid;
+      box-shadow:inset 0 0 0 0.2mm #ccc;
+    }
+    .labelsvg{display:block;width:100mm;height:50mm}
+
+    .sign.mapsign{justify-content:flex-start}
+    .sign.mapsign header{margin-bottom:2mm}
+    .sign.mapsign header{display:flex;align-items:center;justify-content:space-between}
+    .sign.mapsign header img{height:20mm}
+    .floortag{font-size:22pt;font-weight:700}
+    .mapprint{width:100%;flex:1;display:flex;align-items:center;justify-content:center}
+    .mapprint svg{width:100%;height:auto;max-height:150mm}
+    .mapprint rect[fill="#0d1117"]{fill:#fff}
+    .mapprint line{stroke:#ddd}
+    .mapprint .wall{stroke:#000;stroke-width:6}
+    .mapprint .blk rect{fill:#f0f0f0;stroke:#333}
+    .mapprint .blk text{fill:#000;font-size:11px}
+    #printArea{
+      display:grid!important;grid-template-columns:repeat(3,1fr);gap:4mm;
+      padding:6mm;direction:rtl;
+    }
+    .label{
+      border:1px solid #999;border-radius:2mm;padding:3mm 2mm;text-align:center;
+      break-inside:avoid;page-break-inside:avoid;
+    }
+    .label .lcode{font-family:"Courier New",monospace;font-size:20pt;font-weight:700;letter-spacing:1px}
+    .label .lbc{display:block;width:100%;height:14mm;margin:2mm 0 1mm}
+    .label .ldesc{font-size:9pt;color:#333;min-height:11pt}
+  }
+
+  .toast{
+    position:fixed;bottom:20px;right:50%;transform:translateX(50%);
+    background:var(--ok);color:#0d1410;padding:12px 22px;border-radius:8px;
+    font-weight:700;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90vw;text-align:center
+  }
+  .toast.on{opacity:1}
+  .toast.err{background:var(--bad);color:#2a0f0c}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>amoda</h1>
+    <span>מיפוי עמודות ומדפים במחסן</span>
+    <span id="status">עבודה חדשה</span>
+  </header>
+
+  <div class="last" id="last">
+    <span class="lbl">העמודה האחרונה שהוקשה</span>
+    <span class="big" id="lastCol">—</span>
+    <span class="meta" id="lastMeta">עוד לא הוקשה עמודה</span>
+  </div>
+
+  <div class="stage">
+    <div class="steps">
+      <div class="step" id="s1"><span class="num">1</span>מספר עמודה<span class="val" id="v1"></span></div>
+      <div class="step" id="s2"><span class="num">2</span>כמות מדפים<span class="val" id="v2"></span></div>
+      <div class="step" id="s3"><span class="num">3</span>תאור המיקום<span class="val" id="v3"></span></div>
+    </div>
+
+    <p class="q" id="question">מה מספר העמודה?</p>
+    <div class="row">
+      <input id="field" type="text" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="42A">
+      <button id="go">Enter</button>
+      <button id="back" class="ghost" style="display:none">חזרה</button>
+      <button id="cancelEdit" class="ghost" style="display:none">בטל עריכה</button>
+      <button id="heToggle" class="ghost" style="display:none">כתיבה בעברית: פועל</button>
+    </div>
+    <div class="preview" id="preview"></div>
+    <div class="chips" id="descChips"></div>
+    <p class="hint" id="hint">כתוב מספר עמודה ולחץ Enter</p>
+  </div>
+
+  <div class="stage">
+    <div class="tools">
+      <input id="search" type="text" class="rtl" placeholder="חיפוש עמודה או תאור" autocomplete="off">
+      <select id="sort">
+        <option value="added">סדר הקשה</option>
+        <option value="col">לפי מספר עמודה</option>
+        <option value="shelves">לפי כמות מדפים</option>
+      </select>
+      <button id="labels" class="ghost">מדבקות להדפסה</button>
+      <button id="mapBtn" class="ghost">מפת מחסן</button>
+    </div>
+    <table id="tbl">
+      <thead>
+        <tr><th>עמודה</th><th>מדפים</th><th>תאור המיקום</th><th>קודים</th><th></th></tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="empty" id="empty">עדיין לא הוספת עמודות</div>
+
+    <div class="bar">
+      <div class="count">סה"כ <b id="total">0</b> מדפים ב־<b id="cols">0</b> עמודות</div>
+      <div class="row" style="flex:0">
+        <button id="clear" class="ghost">נקה הכל</button>
+        <button id="upload" class="ghost">העלה קובץ אקסל</button>
+        <button id="saveHtml" class="ghost">שמור HTML</button>
+        <button id="shareBtn">קישור להמשך עבודה</button>
+        <button id="export">הורד amoda.xlsx</button>
+      </div>
+    </div>
+    <input type="file" id="picker" accept=".xlsx" style="display:none">
+
+    <p class="note">
+      <b>המשך עבודה במכשיר אחר</b> — לחץ "קישור להמשך עבודה" ושלח את הקישור לעצמך בוואטסאפ או במייל.
+      פתיחת הקישור בכל מכשיר טוענת את כל הרשימה מיד, בלי סיסמה ובלי הרשמה.
+      <br>
+      <b>באותו מכשיר</b> הרשימה נשמרת לבד בדפדפן — סגרת בטעות, נגמרה הסוללה, פתחת שוב את הכתובת: הכל חוזר.
+      <br>
+      <b>מפת מחסן</b> — תרשים דו-מימדי עם שתי קומות. מחליפים ביניהן בכפתורי "קומה 1 / קומה 2",
+      ולכל קומה שרטוט משלה: קירות משלה והעמודות שהצבת בה.
+      בוחרים עמודה מהרשימה שבצד ולוחצים על המפה כדי להציב אותה בקומה הפעילה,
+      גוררים אותה להזזה ומותחים מהפינה הצהובה כדי לקבוע גודל.
+      מתיחת קו על שטח ריק יוצרת קיר, ולחיצה על קיר מוחקת אותו.
+      ההדפסה מוציאה דף נפרד לכל קומה, עם הלוגו וכיתוב הקומה.
+      אפשר לסדר את העמודות אוטומטית ולהדפיס את המפה לרוחב עם הלוגו. הכל נשמר יחד עם הרשימה.
+      <br>
+      <b>שלט איתור</b> — כפתור 🖨 בכל שורה: בוחרים גודל ואיתור, ומקבלים שלט עם הלוגו של אפקון,
+      קוד האיתור בכיתוב ענק, התאור ו-QR. שני גדלים: <b>דף A4 לרוחב</b> לתלייה על עמודה או קיר,
+      ו<b>מדבקה 10×5 ס"מ</b> למדפסת מדבקות. אפשר גם להדפיס בבת אחת את כל האיתורים של העמודה.
+      <br>
+      <b>טווח עמודות</b> — במקום עמודה בודדת אפשר להקיש טווח, וכל עמודה נרשמת בשורה נפרדת:
+      <b>1RA1-1RC1</b> יוצר 1RA1, 1RB1, 1RC1 · <b>1RA1-1RA6</b> יוצר שש עמודות · <b>9A-11A</b> יוצר 9A, 10A, 11A.
+      התוכנית מזהה לבד איזה חלק בשם משתנה. כמות המדפים והתאור שתקיש אחר כך חלים על כל העמודות בטווח.
+      <br>
+      <b>חיפוש ומיון</b> — שדה החיפוש מסנן את הטבלה תוך כדי הקלדה (לפי מספר עמודה או תאור),
+      והמיון קובע גם את הסדר בקובץ האקסל שיורד.
+      <b>0 מדפים</b> — עמודה בלי מדפים נרשמת בקוד שלה בלבד, למשל 9C ולא 9C1.
+      <b>מדבקות להדפסה</b> — מדפיס מדבקה לכל מיקום עם ברקוד Code 128 שכל סורק קורא. אם החיפוש פעיל, מודפסות רק התוצאות המסוננות.
+      <br>
+      <b>עדכון שורה</b> — ✎ ליד עמודה מחזיר אותה לשלושת השלבים למעלה ומעדכן במקום. ✕ מוחק שורה, ו"נקה הכל" מוגן בסיסמה.
+      <br>
+      <b>הורד amoda.xlsx</b> — קובץ האקסל לעבודה ולהדפסה, ואפשר להחזיר אותו לכאן דרך "העלה קובץ אקסל".
+      <b>שמור HTML</b> — עותק של הדף עם הנתונים בתוכו, לגיבוי ולרשימות ארוכות מאוד.
+      <br>
+      קובץ האקסל מכיל שתי עמודות: קוד מיקום ותאור המיקום, כשבתוך הקוד מספר העמודה בשחור ומספר המדף בכחול.
+    </p>
+  </div>
+
+</div>
+<div id="printArea"></div>
+<div id="signArea"></div>
+<div class="modal" id="mapModal" hidden>
+  <div class="card mapcard">
+    <h3>מפת המחסן</h3>
+    <p class="maphint" id="mapHint">מתח קו על שטח ריק — נוצר קיר. לחיצה על קיר מוחקת אותו. להצבת עמודה: בחר אותה מהרשימה שבצד ולחץ על המפה.</p>
+    <div class="floors" id="floorBar">
+      <button type="button" class="fbtn sel" data-f="1">קומה 1</button>
+      <button type="button" class="fbtn" data-f="2">קומה 2</button>
+      <span class="fnote" id="floorNote"></span>
+    </div>
+    <div class="maplayout">
+      <div class="tray">
+        <div class="traytitle">עמודות שלא הוצבו (<span id="trayCount">0</span>)</div>
+        <div class="chips" id="trayList"></div>
+      </div>
+      <div class="mapwrap"><svg id="mapSvg"></svg></div>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <button id="mapUndoWall" class="ghost">בטל קיר אחרון</button>
+      <button id="mapClearWalls" class="ghost">נקה קירות</button>
+      <button id="mapRotate" class="ghost">סובב נבחר</button>
+      <button id="mapTaller" class="ghost">הארך ↕</button>
+      <button id="mapShorter" class="ghost">קצר ↕</button>
+      <button id="mapWider" class="ghost">הרחב ↔</button>
+      <button id="mapNarrower" class="ghost">צר ↔</button>
+      <button id="mapRemove" class="ghost">הסר נבחר מהמפה</button>
+      <button id="mapAuto" class="ghost">סדר אוטומטית</button>
+      <button id="mapPrint">הדפס מפה</button>
+      <button id="mapClose" class="ghost">סגור</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="pickModal" hidden>
+  <div class="card">
+    <h3 id="pickTitle">בחר איתור להדפסה</h3>
+    <div class="floors" id="sizeBar">
+      <button type="button" class="fbtn sel" data-s="a4">דף A4 לרוחב</button>
+      <button type="button" class="fbtn" data-s="label">מדבקה 10×5 ס"מ</button>
+    </div>
+    <div class="chips" id="pickList"></div>
+    <div class="row" style="margin-top:16px">
+      <button id="pickAll">הדפס את כל האיתורים בעמודה</button>
+      <button id="pickClose" class="ghost">סגור</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+
+/* ================= QR =================*/
+/* QR (byte mode, EC level M, versions 1-10) */
+var QR = (function(){
+  var EXP = new Array(512), LOG = new Array(256);
+  (function(){ var x=1; for (var i=0;i<255;i++){ EXP[i]=x; LOG[x]=i; x<<=1; if (x&0x100) x^=0x11d; }
+    for (i=255;i<512;i++) EXP[i]=EXP[i-255]; })();
+  function mul(a,b){ return (a===0||b===0)?0:EXP[LOG[a]+LOG[b]]; }
+  function rsPoly(n){
+    var p=[1];
+    for (var i=0;i<n;i++){
+      var q=p.slice(); q.push(0);
+      for (var j=0;j<p.length;j++) q[j+1]^=mul(p[j],EXP[i]);
+      p=q;
+    }
+    return p;
+  }
+  function rsEncode(data,n){
+    var gen=rsPoly(n), res=new Array(n).fill(0);
+    data.forEach(function(b){
+      var f=b^res[0];
+      res.shift(); res.push(0);
+      for (var i=0;i<n;i++) res[i]^=mul(gen[i+1],f);
+    });
+    return res;
+  }
+  // [version] = [total codewords, ec per block, blocks group1, data cw group1, blocks group2, data cw group2] for level M
+  var VER = {
+    1:[26,10,1,16,0,0], 2:[44,16,1,28,0,0], 3:[70,26,1,44,0,0], 4:[100,18,2,32,0,0],
+    5:[134,24,2,43,0,0], 6:[172,16,4,27,0,0], 7:[196,18,4,31,0,0], 8:[242,22,2,38,2,39],
+    9:[292,22,3,36,2,37], 10:[346,26,4,43,1,44]
+  };
+  var ALIGN = {1:[],2:[6,18],3:[6,22],4:[6,26],5:[6,30],6:[6,34],7:[6,22,38],8:[6,24,42],9:[6,26,46],10:[6,28,50]};
+
+  function capacity(v){ var t=VER[v]; return t[2]*t[3]+t[4]*t[5]; }
+
+  function encode(text){
+    var bytes = Array.from(new TextEncoder().encode(text));
+    var v = 1;
+    while (v <= 10 && capacity(v) < bytes.length + 2 + (v<10?1:2)) v++;
+    if (v > 10) throw new Error('too long');
+    var t = VER[v], dataCw = capacity(v);
+    var bits = [];
+    function put(val,len){ for (var i=len-1;i>=0;i--) bits.push((val>>i)&1); }
+    put(4,4);
+    put(bytes.length, v<10?8:16);
+    bytes.forEach(function(b){ put(b,8); });
+    var rem = dataCw*8 - bits.length;
+    put(0, Math.min(4, rem));
+    while (bits.length % 8) bits.push(0);
+    var cw = [];
+    for (var i=0;i<bits.length;i+=8){
+      var b=0; for (var j=0;j<8;j++) b=(b<<1)|bits[i+j];
+      cw.push(b);
+    }
+    var pad=[0xEC,0x11], k=0;
+    while (cw.length < dataCw) cw.push(pad[k++%2]);
+
+    // split into blocks
+    var blocks=[], ecs=[], pos=0;
+    function push(count,len){
+      for (var i=0;i<count;i++){ var d=cw.slice(pos,pos+len); pos+=len; blocks.push(d); ecs.push(rsEncode(d,t[1])); }
+    }
+    push(t[2],t[3]); push(t[4],t[5]);
+    var maxD = Math.max.apply(null, blocks.map(function(b){ return b.length; }));
+    var final=[];
+    for (i=0;i<maxD;i++) blocks.forEach(function(b){ if (i<b.length) final.push(b[i]); });
+    for (i=0;i<t[1];i++) ecs.forEach(function(e){ final.push(e[i]); });
+    return {version:v, codewords:final};
+  }
+
+  function buildMatrix(text){
+    var enc = encode(text), v = enc.version, size = v*4+17;
+    var m = [], res = [];
+    for (var i=0;i<size;i++){ m.push(new Array(size).fill(null)); res.push(new Array(size).fill(false)); }
+
+    function finder(r,c){
+      for (var i=-1;i<=7;i++) for (var j=-1;j<=7;j++){
+        var rr=r+i, cc=c+j;
+        if (rr<0||cc<0||rr>=size||cc>=size) continue;
+        var on = (i>=0&&i<=6&&(j===0||j===6)) || (j>=0&&j<=6&&(i===0||i===6)) || (i>=2&&i<=4&&j>=2&&j<=4);
+        m[rr][cc]=on?1:0; res[rr][cc]=true;
+      }
+    }
+    finder(0,0); finder(0,size-7); finder(size-7,0);
+
+    ALIGN[v].forEach(function(r){
+      ALIGN[v].forEach(function(c){
+        if (res[r][c]) return;
+        for (var i=-2;i<=2;i++) for (var j=-2;j<=2;j++){
+          m[r+i][c+j] = (Math.max(Math.abs(i),Math.abs(j))!==1)?1:0;
+          res[r+i][c+j]=true;
+        }
+      });
+    });
+
+    for (i=8;i<size-8;i++){ m[6][i]=(i%2===0)?1:0; res[6][i]=true; m[i][6]=(i%2===0)?1:0; res[i][6]=true; }
+    m[size-8][8]=1; res[size-8][8]=true;
+    for (i=0;i<9;i++){ if(!res[8][i]){res[8][i]=true;} if(!res[i][8]){res[i][8]=true;} }
+    for (i=0;i<8;i++){ res[8][size-1-i]=true; res[size-1-i][8]=true; }
+
+    // place data with mask 0 evaluation over all 8 masks
+    function maskFn(k,r,c){
+      switch(k){
+        case 0: return (r+c)%2===0;
+        case 1: return r%2===0;
+        case 2: return c%3===0;
+        case 3: return (r+c)%3===0;
+        case 4: return (Math.floor(r/2)+Math.floor(c/3))%2===0;
+        case 5: return (r*c)%2+(r*c)%3===0;
+        case 6: return ((r*c)%2+(r*c)%3)%2===0;
+        case 7: return ((r+c)%2+(r*c)%3)%2===0;
+      }
+    }
+    function placeData(mask){
+      var g = m.map(function(row){ return row.slice(); });
+      var bitIdx = 0, dir = -1, row = size - 1;
+      for (var col = size - 1; col > 0; col -= 2){
+        if (col === 6) col--;
+        while (true){
+          for (var k = 0; k < 2; k++){
+            var c = col - k;
+            if (!res[row][c]){
+              var bit = 0;
+              if (bitIdx < enc.codewords.length * 8){
+                bit = (enc.codewords[bitIdx >> 3] >> (7 - (bitIdx & 7))) & 1;
+              }
+              bitIdx++;
+              if (maskFn(mask, row, c)) bit ^= 1;
+              g[row][c] = bit;
+            }
+          }
+          row += dir;
+          if (row < 0 || row >= size){ row -= dir; dir = -dir; break; }
+        }
+      }
+      // format info (level M = 00) — סדר ההצבה התקני
+      var fmt = (0 << 3) | mask;
+      var rem = fmt << 10;
+      for (var i = 14; i >= 10; i--) if ((rem >> i) & 1) rem ^= 0x537 << (i - 10);
+      var bitsF = ((fmt << 10) | (rem & 0x3FF)) ^ 0x5412;
+
+      for (i = 0; i < 15; i++){
+        var b = (bitsF >> i) & 1;
+        if (i < 6) g[i][8] = b;
+        else if (i < 8) g[i + 1][8] = b;
+        else g[size - 15 + i][8] = b;
+
+        if (i < 8) g[8][size - 1 - i] = b;
+        else if (i === 8) g[8][7] = b;
+        else g[8][14 - i] = b;
+      }
+      g[size - 8][8] = 1;
+      return g;
+    }
+
+    function penalty(g){
+      var p=0, n=size, i,j,run,last;
+      for (i=0;i<n;i++){
+        run=1; last=g[i][0];
+        for (j=1;j<n;j++){ if (g[i][j]===last) run++; else { if (run>=5) p+=3+(run-5); run=1; last=g[i][j]; } }
+        if (run>=5) p+=3+(run-5);
+        run=1; last=g[0][i];
+        for (j=1;j<n;j++){ if (g[j][i]===last) run++; else { if (run>=5) p+=3+(run-5); run=1; last=g[j][i]; } }
+        if (run>=5) p+=3+(run-5);
+      }
+      for (i=0;i<n-1;i++) for (j=0;j<n-1;j++){
+        var s=g[i][j]+g[i][j+1]+g[i+1][j]+g[i+1][j+1];
+        if (s===0||s===4) p+=3;
+      }
+      var dark=0;
+      for (i=0;i<n;i++) for (j=0;j<n;j++) dark+=g[i][j];
+      p += Math.floor(Math.abs(dark*100/(n*n)-50)/5)*10;
+      return p;
+    }
+    var best=null, bestP=Infinity;
+    for (var mk=0;mk<8;mk++){
+      var g=placeData(mk), p=penalty(g);
+      if (p<bestP){ bestP=p; best=g; }
+    }
+    return best;
+  }
+  return {matrix: buildMatrix};
+})();
+
+/* ================= ZIP + XLSX (מובנה, בלי ספריות) ================= */
+var CRC_TABLE = (function(){
+  var t = new Uint32Array(256), c, n, k;
+  for (n=0;n<256;n++){ c=n; for(k=0;k<8;k++) c = (c & 1) ? (0xEDB88320 ^ (c>>>1)) : (c>>>1); t[n]=c>>>0; }
+  return t;
+})();
+function crc32(u8){
+  var c = 0xFFFFFFFF;
+  for (var i=0;i<u8.length;i++) c = CRC_TABLE[(c ^ u8[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+function enc(s){ return new TextEncoder().encode(s); }
+function esc(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function unesc(s){
+  return s.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"')
+          .replace(/&apos;/g,"'").replace(/&#(\d+);/g, function(_,d){ return String.fromCharCode(+d); })
+          .replace(/&amp;/g,'&');
+}
+
+function zipStore(files){
+  var parts = [], central = [], offset = 0;
+  files.forEach(function(f){
+    var name = enc(f.name), body = f.data, crc = crc32(body);
+    var lh = new Uint8Array(30 + name.length), dv = new DataView(lh.buffer);
+    dv.setUint32(0, 0x04034b50, true);
+    dv.setUint16(4, 20, true); dv.setUint16(6, 0x0800, true);
+    dv.setUint32(14, crc, true);
+    dv.setUint32(18, body.length, true); dv.setUint32(22, body.length, true);
+    dv.setUint16(26, name.length, true);
+    lh.set(name, 30);
+    parts.push(lh, body);
+
+    var ch = new Uint8Array(46 + name.length), cv = new DataView(ch.buffer);
+    cv.setUint32(0, 0x02014b50, true);
+    cv.setUint16(4, 20, true); cv.setUint16(6, 20, true); cv.setUint16(8, 0x0800, true);
+    cv.setUint32(16, crc, true);
+    cv.setUint32(20, body.length, true); cv.setUint32(24, body.length, true);
+    cv.setUint16(28, name.length, true);
+    cv.setUint32(42, offset, true);
+    ch.set(name, 46);
+    central.push(ch);
+    offset += lh.length + body.length;
+  });
+  var cdSize = central.reduce(function(a,b){ return a + b.length; }, 0);
+  var eocd = new Uint8Array(22), ev = new DataView(eocd.buffer);
+  ev.setUint32(0, 0x06054b50, true);
+  ev.setUint16(8, files.length, true); ev.setUint16(10, files.length, true);
+  ev.setUint32(12, cdSize, true); ev.setUint32(16, offset, true);
+
+  var all = parts.concat(central, [eocd]);
+  var total = all.reduce(function(a,b){ return a + b.length; }, 0);
+  var out = new Uint8Array(total), p = 0;
+  all.forEach(function(u){ out.set(u, p); p += u.length; });
+  return out;
+}
+
+function buildXlsx(data){
+  var strings = [], sidx = {};
+  function plain(text){
+    var key = 'p\u0000' + text;
+    if (!(key in sidx)){ sidx[key] = strings.length; strings.push('<si><t xml:space="preserve">'+esc(text)+'</t></si>'); }
+    return sidx[key];
+  }
+  function rich(colTxt, shelfTxt){
+    var key = 'r\u0000' + colTxt + '\u0000' + shelfTxt;
+    if (!(key in sidx)){
+      sidx[key] = strings.length;
+      strings.push('<si>' +
+        '<r><rPr><b/><color rgb="FF000000"/><sz val="11"/><rFont val="Calibri"/></rPr><t xml:space="preserve">'+esc(colTxt)+'</t></r>' +
+        '<r><rPr><b/><color rgb="FF0070C0"/><sz val="11"/><rFont val="Calibri"/></rPr><t xml:space="preserve">'+esc(shelfTxt)+'</t></r>' +
+        '</si>');
+    }
+    return sidx[key];
+  }
+
+  var rowsXml = [];
+  rowsXml.push('<row r="1" ht="20" customHeight="1">' +
+    ['קוד מיקום','תאור המיקום'].map(function(h,i){
+      return '<c r="'+String.fromCharCode(65+i)+'1" s="4" t="s"><v>'+plain(h)+'</v></c>';
+    }).join('') + '</row>');
+
+  var r = 1;
+  data.forEach(function(d){
+    if (!d.shelves){
+      r++;
+      rowsXml.push('<row r="'+r+'">' +
+        '<c r="A'+r+'" s="1" t="s"><v>'+plain(d.col)+'</v></c>' +
+        (d.desc ? '<c r="B'+r+'" s="3" t="s"><v>'+plain(d.desc)+'</v></c>' : '') +
+        '</row>');
+      return;
+    }
+    for (var i=1;i<=d.shelves;i++){
+      r++;
+      rowsXml.push('<row r="'+r+'">' +
+        '<c r="A'+r+'" s="1" t="s"><v>'+rich(d.col, String(i))+'</v></c>' +
+        (d.desc ? '<c r="B'+r+'" s="3" t="s"><v>'+plain(d.desc)+'</v></c>' : '') +
+        '</row>');
+    }
+  });
+
+  var sheet =
+'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+'<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+'<sheetViews><sheetView rightToLeft="1" tabSelected="1" workbookViewId="0">' +
+'<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>' +
+'<cols><col min="1" max="1" width="18" customWidth="1"/><col min="2" max="2" width="34" customWidth="1"/></cols>' +
+'<sheetData>' + rowsXml.join('') + '</sheetData>' +
+'<autoFilter ref="A1:B'+r+'"/></worksheet>';
+
+  var sst = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+'<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="'+strings.length+'" uniqueCount="'+strings.length+'">' +
+strings.join('') + '</sst>';
+
+  var styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+'<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+'<fonts count="4">' +
+'<font><sz val="11"/><color rgb="FF000000"/><name val="Calibri"/></font>' +
+'<font><b/><sz val="11"/><color rgb="FF000000"/><name val="Calibri"/></font>' +
+'<font><b/><sz val="11"/><color rgb="FF0070C0"/><name val="Calibri"/></font>' +
+'<font><sz val="11"/><color rgb="FF444444"/><name val="Calibri"/></font>' +
+'</fonts>' +
+'<fills count="3"><fill><patternFill patternType="none"/></fill>' +
+'<fill><patternFill patternType="gray125"/></fill>' +
+'<fill><patternFill patternType="solid"><fgColor rgb="FFEDEDED"/><bgColor indexed="64"/></patternFill></fill></fills>' +
+'<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border>' +
+'<border><left/><right/><top/><bottom style="thin"><color rgb="FF999999"/></bottom><diagonal/></border></borders>' +
+'<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+'<cellXfs count="5">' +
+'<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
+'<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>' +
+'<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center"/></xf>' +
+'<xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1"/>' +
+'<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>' +
+'</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
+
+  return zipStore([
+    {name:'[Content_Types].xml', data: enc('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+'<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+'<Default Extension="xml" ContentType="application/xml"/>' +
+'<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+'<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
+'<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
+'<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>' +
+'</Types>')},
+    {name:'_rels/.rels', data: enc('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' +
+'</Relationships>')},
+    {name:'xl/workbook.xml', data: enc('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+'<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+'<sheets><sheet name="amoda" sheetId="1" r:id="rId1"/></sheets></workbook>')},
+    {name:'xl/_rels/workbook.xml.rels', data: enc('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' +
+'<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
+'<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/>' +
+'</Relationships>')},
+    {name:'xl/styles.xml', data: enc(styles)},
+    {name:'xl/sharedStrings.xml', data: enc(sst)},
+    {name:'xl/worksheets/sheet1.xml', data: enc(sheet)}
+  ]);
+}
+
+async function unzip(u8){
+  var dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength), eocd = -1;
+  for (var i = u8.length - 22; i >= 0 && i > u8.length - 66000; i--){
+    if (dv.getUint32(i, true) === 0x06054b50){ eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error('zip');
+  var count = dv.getUint16(eocd + 10, true), p = dv.getUint32(eocd + 16, true), out = {};
+  for (var n = 0; n < count; n++){
+    var nameLen = dv.getUint16(p + 28, true), extraLen = dv.getUint16(p + 30, true),
+        cmtLen = dv.getUint16(p + 32, true), method = dv.getUint16(p + 10, true),
+        cSize = dv.getUint32(p + 20, true), lOff = dv.getUint32(p + 42, true);
+    var name = new TextDecoder().decode(u8.subarray(p + 46, p + 46 + nameLen));
+    var start = lOff + 30 + dv.getUint16(lOff + 26, true) + dv.getUint16(lOff + 28, true);
+    var raw = u8.subarray(start, start + cSize);
+    if (method === 8){
+      var stream = new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+      out[name] = new Uint8Array(await new Response(stream).arrayBuffer());
+    } else {
+      out[name] = raw;
+    }
+    p += 46 + nameLen + extraLen + cmtLen;
+  }
+  return out;
+}
+
+function sharedStrings(xml){
+  var out = [], re = /<si\b[^>]*>([\s\S]*?)<\/si>/g, m;
+  while ((m = re.exec(xml))){
+    var txt = '', tre = /<t\b[^>]*>([\s\S]*?)<\/t>/g, t;
+    while ((t = tre.exec(m[1]))) txt += unesc(t[1]);
+    out.push(txt);
+  }
+  return out;
+}
+function sheetGrid(xml, sst){
+  var grid = {}, rre = /<row\b[^>]*\br="(\d+)"[^>]*>([\s\S]*?)<\/row>/g, rm;
+  while ((rm = rre.exec(xml))){
+    var line = {}, cre = /<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g, cm;
+    while ((cm = cre.exec(rm[2]))){
+      var attrs = cm[1] || '', inner = cm[2] || '';
+      var ref = (attrs.match(/\br="([A-Z]+)\d+"/) || [])[1];
+      if (!ref) continue;
+      var type = (attrs.match(/\bt="([^"]+)"/) || [])[1] || 'n', val = '';
+      if (type === 'inlineStr'){
+        var itre = /<t\b[^>]*>([\s\S]*?)<\/t>/g, it;
+        while ((it = itre.exec(inner))) val += unesc(it[1]);
+      } else {
+        var v = (inner.match(/<v>([\s\S]*?)<\/v>/) || [])[1];
+        if (v === undefined) continue;
+        val = (type === 's') ? (sst[+v] || '') : unesc(v);
+      }
+      line[ref] = val;
+    }
+    grid[+rm[1]] = line;
+  }
+  return grid;
+}
+async function readXlsx(u8){
+  var zip = await unzip(u8), dec = new TextDecoder();
+  var sheetKey = Object.keys(zip).filter(function(k){ return /^xl\/worksheets\/sheet\d+\.xml$/.test(k); })[0];
+  if (!sheetKey) throw new Error('sheet');
+  var sst = zip['xl/sharedStrings.xml'] ? sharedStrings(dec.decode(zip['xl/sharedStrings.xml'])) : [];
+  var grid = sheetGrid(dec.decode(zip[sheetKey]), sst);
+
+  var header = grid[1] || {}, colOf = {};
+  Object.keys(header).forEach(function(letter){
+    var h = String(header[letter]).trim();
+    if (h.indexOf('עמודה') === 0) colOf.col = letter;
+    else if (h.indexOf('מדף') === 0) colOf.shelf = letter;
+    else if (h.indexOf('תאור') === 0 || h.indexOf('תיאור') === 0) colOf.desc = letter;
+    else if (h.indexOf('קוד') === 0) colOf.code = letter;
+  });
+  if (!colOf.col && !colOf.code){ colOf.code = 'A'; colOf.col = 'B'; colOf.shelf = 'C'; colOf.desc = 'D'; }
+
+  var map = {}, order = [];
+  Object.keys(grid).map(Number).sort(function(a,b){ return a-b; }).forEach(function(rn){
+    if (rn === 1) return;
+    var row = grid[rn];
+    var col = colOf.col ? String(row[colOf.col] || '').trim() : '';
+    var shelf = colOf.shelf ? (parseInt(row[colOf.shelf], 10) || 0) : 0;
+    var desc = colOf.desc ? String(row[colOf.desc] || '').trim() : '';
+    if ((!col || !shelf) && colOf.code){
+      var raw = String(row[colOf.code] || '').trim();
+      var m2 = raw.match(/^(.*?)(\d+)$/);
+      if (m2){ col = col || m2[1]; shelf = shelf || parseInt(m2[2], 10); }
+      else if (raw){ col = col || raw; }
+    }
+    if (!col) return;
+    col = col.toUpperCase();
+    if (!map[col]){ map[col] = {col: col, shelves: 0, desc: ''}; order.push(col); }
+    if (shelf > map[col].shelves) map[col].shelves = shelf;
+    if (desc && !map[col].desc) map[col].desc = desc;
+  });
+  return order.map(function(c){ return map[c]; });
+}
+
+/* ================= האפליקציה ================= */
+  var data = [];
+  var draft = {col:'', shelves:0, desc:'', list:null};
+  var step = 1, dirty = false;
+  var savedStamp = '';
+  var lastShelves = null;
+  var lastDesc = '';
+
+  try {
+    var stored = JSON.parse((document.getElementById('saved-data') || {}).textContent || '{}');
+    if (stored && Array.isArray(stored.rows)) data = stored.rows;
+    savedStamp = stored.saved || '';
+    lastShelves = isNaN(parseInt(stored.lastShelves, 10)) ? (data.length ? data[data.length-1].shelves : null) : parseInt(stored.lastShelves, 10);
+    lastDesc = (typeof stored.lastDesc === 'string') ? stored.lastDesc
+             : (data.length ? (data[data.length-1].desc || '') : '');
+    if (Array.isArray(stored.walls)) walls = stored.walls;
+  } catch(e){ data = []; }
+
+  var field = document.getElementById('field');
+  var question = document.getElementById('question');
+  var hint = document.getElementById('hint');
+  var preview = document.getElementById('preview');
+  var backBtn = document.getElementById('back');
+  var cancelBtn = document.getElementById('cancelEdit');
+  var statusEl = document.getElementById('status');
+  var picker = document.getElementById('picker');
+
+  var editIndex = -1;
+  var PASSWORD = '30172';
+
+  function codesFor(col, n){
+    if (!n) return [col];
+    var out = [];
+    for (var i=1;i<=n;i++) out.push(col + i);
+    return out;
+  }
+  function markDirty(){
+    dirty = true;
+    statusEl.classList.add('dirty');
+    statusEl.textContent = 'יש שינויים שלא הורדו לאקסל';
+    saveLocal();
+  }
+  function markClean(when){
+    dirty = false;
+    statusEl.classList.remove('dirty');
+    statusEl.textContent = when;
+  }
+  function paintSteps(){
+    [1,2,3].forEach(function(i){
+      document.getElementById('s'+i).classList.toggle('active', step === i);
+    });
+    document.getElementById('v1').textContent = rangeOn()
+      ? (draft.list[0] + '–' + draft.list[draft.list.length-1] + ' (' + draft.list.length + ')')
+      : (draft.col || '');
+    document.getElementById('v2').textContent = draft.shelves ? draft.shelves + ' מדפים' : '';
+    document.getElementById('v3').textContent = draft.desc || '';
+  }
+  function rangeOn(){ return !!(draft.list && draft.list.length > 1); }
+
+  function normCol(s){
+    return String(s).trim().toUpperCase().replace(/^([A-Z]*)0+(?=\d)/, '$1');
+  }
+
+  function showCodes(n){
+    var items;
+    if (rangeOn()){
+      items = draft.list.map(function(c){ return n ? c + '1…' + c + n : c; });
+    } else {
+      items = codesFor(draft.col, n);
+    }
+    if (items.length > 12){
+      items = items.slice(0,8).concat(['…'], items.slice(-2));
+    }
+    preview.innerHTML = items.map(function(c){ return '<span class="chip">'+esc(c)+'</span>'; }).join('');
+  }
+  function ask(n){
+    step = n;
+    preview.innerHTML = '';
+    backBtn.style.display = (n === 1) ? 'none' : 'inline-block';
+    cancelBtn.style.display = (editIndex >= 0) ? 'inline-block' : 'none';
+    field.classList.toggle('edit-on', editIndex >= 0);
+    var editing = editIndex >= 0;
+    var prefill = '';
+
+    if (n === 1){
+      if (!editing) draft = {col:'', shelves:0, desc:'', list:null};
+      question.innerHTML = editing
+        ? 'עריכה — מה מספר העמודה? <b>' + (data[editIndex] ? data[editIndex].col : '') + '</b>'
+        : 'מה מספר העמודה?';
+      hint.textContent = editing ? 'שנה את המספר או Enter כדי להשאיר'
+                                 : 'מספר עמודה ו-Enter — או טווח, למשל 1A-8B';
+      if (!editing) draft.list = null;
+      field.className = ''; field.inputMode = 'text'; field.placeholder = '42A';
+      field.setAttribute('lang','en');
+      field.setAttribute('autocapitalize','characters');
+      if (editing) prefill = draft.col;
+    } else if (n === 2){
+      question.innerHTML = rangeOn()
+        ? 'כמה מדפים בכל אחת מ-<b>' + draft.list.length + '</b> העמודות?'
+        : 'כמה מדפים יש בעמודה <b>' + draft.col + '</b>?';
+      field.className = ''; field.inputMode = 'numeric'; field.placeholder = '3';
+      field.setAttribute('lang','en');
+      field.setAttribute('autocapitalize','off');
+      var shown = editing ? draft.shelves : lastShelves;
+      if (shown){
+        prefill = String(shown);
+        hint.textContent = 'מוצג ' + shown + (editing ? ' — Enter מאשר, או הקש מספר אחר'
+                                                     : ' מהפעם הקודמת — Enter מאשר, או הקש מספר אחר');
+        showCodes(shown);
+      } else if (shown === 0){
+        hint.textContent = 'הפעם הקודמת הייתה בלי מדפים — Enter מאשר, או הקש מספר';
+        showCodes(0);
+      } else {
+        hint.textContent = 'כתוב מספר ולחץ Enter — Enter ריק לעמודה בלי מדפים';
+      }
+    } else {
+      question.innerHTML = rangeOn()
+        ? 'מה תאור המיקום של <b>' + draft.list.length + '</b> העמודות?'
+        : 'מה תאור המיקום של <b>' + draft.col + '</b>?';
+      field.className = 'rtl'; field.inputMode = 'text'; field.placeholder = 'למשל: מעבר צפוני, ליד הרמפה';
+      field.setAttribute('lang','he');
+      field.setAttribute('autocapitalize','off');
+      showCodes(draft.shelves);
+      var d = editing ? draft.desc : lastDesc;
+      if (d){
+        prefill = d;
+        hint.textContent = 'מוצג התאור הקודם — Enter מאשר. מחק את השדה ו-Enter כדי לשמור בלי תאור';
+      } else {
+        hint.textContent = 'אפשר להשאיר את המקלדת באנגלית — הקש כרגיל וייכתב בעברית';
+      }
+    }
+
+    field.value = prefill;
+    field.classList.toggle('edit-on', editing);
+    paintSteps();
+    paintDescChips();
+    paintHeToggle();
+    field.focus();
+    if (prefill) field.select();
+  }
+
+  function livePreview(){
+    if (step !== 2) return;
+    var raw = field.value.trim();
+    var n = parseInt(raw, 10);
+    if (raw === '' || isNaN(n) || n < 0 || n > 300){ preview.innerHTML = ''; return; }
+    showCodes(n);
+  }
+
+  function submit(){
+    var v = field.value.trim();
+    var editing = editIndex >= 0;
+
+    if (step === 1){
+      if (!v){ hint.textContent = 'צריך למלא מספר עמודה'; return; }
+
+      var list = editing ? null : expandRange(v);
+      if (list){
+        var fresh = list.filter(function(c){
+          return !data.some(function(d){ return d.col.toUpperCase() === c; });
+        });
+        if (!fresh.length){ hint.textContent = 'כל העמודות בטווח כבר קיימות ברשימה'; return; }
+        draft.list = fresh.map(normCol);
+        draft.col = fresh[0];
+        var skipped = list.length - fresh.length;
+        ask(2);
+        hint.textContent = 'טווח של ' + fresh.length + ' עמודות' +
+          (skipped ? ' (' + skipped + ' כבר היו ברשימה)' : '') + ' — כמה מדפים בכל אחת?';
+        return;
+      }
+
+      var up = normCol(v);
+      var clash = data.some(function(d, i){ return i !== editIndex && d.col.toUpperCase() === up; });
+      if (clash){ hint.textContent = 'העמודה ' + v + ' כבר קיימת ברשימה'; return; }
+      draft.list = null;
+      draft.col = up; ask(2);
+
+    } else if (step === 2){
+      var n;
+      if (!v){
+        n = editing ? draft.shelves : lastShelves;
+        if (n === null || n === undefined) n = 0;
+      } else {
+        n = parseInt(v, 10);
+      }
+      if (isNaN(n) || n < 0){ hint.textContent = 'צריך מספר מדפים (0 ומעלה)'; return; }
+      draft.shelves = n;
+      if (!editing) lastShelves = n;
+      ask(3);
+
+    } else {
+      draft.desc = v;
+      var msg;
+      if (editing){
+        data[editIndex] = {col:draft.col, shelves:draft.shelves, desc:draft.desc};
+        msg = 'עמודה ' + draft.col + ' עודכנה. הבאה בתור:';
+        editIndex = -1;
+      } else if (draft.list && draft.list.length > 1){
+        lastDesc = v;
+        draft.list.forEach(function(c){
+          data.push({col:c, shelves:draft.shelves, desc:draft.desc});
+        });
+        msg = 'נוספו ' + draft.list.length + ' עמודות: ' +
+              draft.list[0] + ' עד ' + draft.list[draft.list.length-1] + '. הבאה בתור:';
+      } else {
+        lastDesc = v;
+        data.push({col:draft.col, shelves:draft.shelves, desc:draft.desc});
+        msg = 'נוספה עמודה ' + draft.col + (draft.shelves ? ' (' + draft.shelves + ' מדפים)' : ' (בלי מדפים)') + '. הבאה בתור:';
+      }
+      render(); markDirty();
+      ask(1); hint.textContent = msg;
+    }
+  }
+
+  function startEdit(idx){
+    editIndex = idx;
+    draft = {col: data[idx].col, shelves: data[idx].shelves, desc: data[idx].desc || '', list:null};
+    render();
+    ask(1);
+    hint.textContent = 'עריכת ' + data[idx].col + ' — עבור עם Enter בין השדות ושנה מה שצריך';
+  }
+  function cancelEdit(){
+    editIndex = -1;
+    render();
+    ask(1);
+    hint.textContent = 'העריכה בוטלה. שום דבר לא השתנה';
+  }
+  function render(){
+    var tbody = document.getElementById('tbody');
+    tbody.innerHTML = '';
+    var total = data.reduce(function(a,d){ return a + d.shelves; }, 0);
+    var rows = viewIdx();
+
+    rows.forEach(function(idx){
+      var d = data[idx];
+      var codes = codesFor(d.col, d.shelves);
+      var short = codes.length > 5 ? codes.slice(0,3).join(', ') + ' … ' + codes[codes.length-1] : codes.join(', ');
+      var tr = document.createElement('tr');
+      if (idx === editIndex) tr.className = 'editing';
+      tr.innerHTML =
+        '<td class="code">'+esc(d.col)+'</td>' +
+        '<td>'+(d.shelves || '—')+'</td>' +
+        '<td>'+(esc(d.desc||'') || '—')+'</td>' +
+        '<td class="codes">'+esc(short)+'</td>' +
+        '<td style="width:104px;white-space:nowrap">' +
+          '<button class="printbtn" title="הדפס שלט איתור">🖨</button>' +
+          '<button class="editbtn" title="עדכן">✎</button>' +
+          '<button class="del" title="מחק">✕</button>' +
+        '</td>';
+      tr.querySelector('.printbtn').onclick = function(){ openPicker(idx); };
+      tr.querySelector('.editbtn').onclick = function(){ startEdit(idx); };
+      tr.querySelector('.del').onclick = function(){
+        if (!confirm('למחוק את עמודה ' + d.col + '?')) return;
+        data.splice(idx,1);
+        if (editIndex === idx) editIndex = -1;
+        else if (editIndex > idx) editIndex--;
+        render(); markDirty(); ask(1);
+      };
+      tbody.appendChild(tr);
+    });
+
+    var filtering = rows.length !== data.length;
+    document.getElementById('empty').style.display = rows.length ? 'none' : 'block';
+    document.getElementById('empty').textContent = data.length
+      ? 'אין עמודה שמתאימה לחיפוש'
+      : 'עדיין לא הוספת עמודות';
+    document.getElementById('tbl').style.display = rows.length ? 'table' : 'none';
+    document.getElementById('total').textContent = total;
+    document.getElementById('cols').textContent = filtering
+      ? (rows.length + ' מתוך ' + data.length)
+      : data.length;
+
+    var lastCol = document.getElementById('lastCol');
+    var lastMeta = document.getElementById('lastMeta');
+    if (data.length){
+      var L = data[data.length-1];
+      var lc = codesFor(L.col, L.shelves);
+      lastCol.textContent = L.col;
+      lastMeta.textContent = (L.shelves
+          ? L.shelves + ' מדפים · ' + lc[0] + '–' + lc[lc.length-1]
+          : 'בלי מדפים · ' + lc[0]) +
+        (L.desc ? ' · ' + L.desc : '');
+    } else {
+      lastCol.textContent = '—';
+      lastMeta.textContent = 'עוד לא הוקשה עמודה';
+    }
+  }
+  function toast(msg, bad){
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.toggle('err', !!bad);
+    t.classList.add('on');
+    setTimeout(function(){ t.classList.remove('on'); }, 2800);
+  }
+  function download(blob, name){
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  }
+
+  /* ---------- שמירה אוטומטית במכשיר + קישור להמשך ---------- */
+  function packState(){
+    return {
+      s: stamp(),
+      n: lastShelves,
+      t: lastDesc,
+      w: walls,
+      r: data.map(function(d){
+        var row = [d.col, d.shelves, d.desc || ''];
+        if (placed(d)) row.push(d.mx, d.my, d.mr ? 1 : 0, blkW(d), blkH(d), floorOf(d));
+        return row;
+      })
+    };
+  }
+  function unpackState(o){
+    if (!o || !Array.isArray(o.r)) return false;
+    data = o.r.map(function(a){
+      var d = {col:String(a[0]), shelves:(isNaN(parseInt(a[1],10)) ? 0 : parseInt(a[1],10)), desc:String(a[2]||'')};
+      if (a.length > 4 && a[3] !== null && a[3] !== undefined){
+        d.mx = parseInt(a[3],10); d.my = parseInt(a[4],10); d.mr = !!a[5];
+        if (a.length > 6){ d.mw = parseInt(a[6],10) || 1; d.mh = parseInt(a[7],10) || 1; }
+        d.mf = parseInt(a[8],10) || 1;
+      }
+      return d;
+    });
+    lastShelves = isNaN(parseInt(o.n,10)) ? (data.length ? data[data.length-1].shelves : null) : parseInt(o.n,10);
+    lastDesc = typeof o.t === 'string' ? o.t : '';
+    if (Array.isArray(o.w)) walls = o.w;
+    return true;
+  }
+  function saveLocal(){
+    try { localStorage.setItem('amoda.state', JSON.stringify(packState())); } catch(e){}
+  }
+  function loadLocal(){
+    try {
+      var raw = localStorage.getItem('amoda.state');
+      if (!raw) return null;
+      var o = JSON.parse(raw);
+      return (o && Array.isArray(o.r)) ? o : null;
+    } catch(e){ return null; }
+  }
+  function b64url(str){
+    var u8 = new TextEncoder().encode(str), s = '';
+    for (var i=0;i<u8.length;i++) s += String.fromCharCode(u8[i]);
+    return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  }
+  function unb64url(b){
+    var s = b.replace(/-/g,'+').replace(/_/g,'/');
+    while (s.length % 4) s += '=';
+    var bin = atob(s), u8 = new Uint8Array(bin.length);
+    for (var i=0;i<bin.length;i++) u8[i] = bin.charCodeAt(i);
+    return new TextDecoder().decode(u8);
+  }
+  function shareLink(){
+    if (!data.length){ toast('אין מה לשתף — הרשימה ריקה', true); return; }
+    var url = location.href.split('#')[0] + '#d=' + b64url(JSON.stringify(packState()));
+    if (url.length > 30000){ toast('הרשימה ארוכה מדי לקישור — השתמש ב"שמור HTML"', true); return; }
+    if (navigator.share){
+      navigator.share({title:'amoda', text:'המשך עבודה במחסן', url:url})
+        .then(function(){ toast('הקישור נשלח'); })
+        .catch(function(){});
+      return;
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(url)
+        .then(function(){ toast('הקישור הועתק — שלח אותו לעצמך'); })
+        .catch(function(){ prompt('העתק את הקישור:', url); });
+    } else {
+      prompt('העתק את הקישור:', url);
+    }
+  }
+  document.getElementById('shareBtn').onclick = shareLink;
+
+  /* ---------- חיפוש, מיון ומדבקות ---------- */
+  var searchEl = document.getElementById('search');
+  var sortEl = document.getElementById('sort');
+
+  function natKey(s){
+    return String(s).toUpperCase().replace(/\d+/g, function(n){ return n.padStart(8,'0'); });
+  }
+  function sortedIdx(){
+    var idx = data.map(function(_, i){ return i; });
+    var mode = sortEl.value;
+    if (mode === 'col'){
+      idx.sort(function(a,b){ return natKey(data[a].col) < natKey(data[b].col) ? -1 : 1; });
+    } else if (mode === 'shelves'){
+      idx.sort(function(a,b){ return data[b].shelves - data[a].shelves; });
+    }
+    return idx;
+  }
+  function viewIdx(){
+    var q = searchEl.value.trim().toUpperCase();
+    return sortedIdx().filter(function(i){
+      if (!q) return true;
+      var d = data[i];
+      return d.col.toUpperCase().indexOf(q) >= 0 || String(d.desc||'').toUpperCase().indexOf(q) >= 0;
+    });
+  }
+  function sortedData(){
+    return sortedIdx().map(function(i){ return data[i]; });
+  }
+
+  /* Code 128B — נבדק מול מקודד תקני */
+  var C128 = ["212222","222122","222221","121223","121322","131222","122213","122312","132212","221213",
+  "221312","231212","112232","122132","122231","113222","123122","123221","223211","221132",
+  "221231","213212","223112","312131","311222","321122","321221","312212","322112","322211",
+  "212123","212321","232121","111323","131123","131321","112313","132113","132311","211313",
+  "231113","231311","112133","112331","132131","113123","113321","133121","313121","211331",
+  "231131","213113","213311","213131","311123","311321","331121","312113","312311","332111",
+  "314111","221411","431111","111224","111422","121124","121421","141122","141221","112214",
+  "112412","122114","122411","142112","142211","241211","221114","413111","241112","134111",
+  "111242","121142","121241","114212","124112","124211","411212","421112","421211","212141",
+  "214121","412121","111143","111341","131141","114113","114311","411113","411311","113141",
+  "114131","311141","411131","211412","211214","211232","2331112"];
+
+  function code128bits(text){
+    var vals = [104], sum = 104;
+    for (var i=0;i<text.length;i++){
+      var v = text.charCodeAt(i) - 32;
+      if (v < 0 || v > 94) v = 31;
+      vals.push(v); sum += v * (i + 1);
+    }
+    vals.push(sum % 103); vals.push(106);
+    var bits = '';
+    vals.forEach(function(v){
+      var pat = C128[v], on = true;
+      for (var j=0;j<pat.length;j++){
+        bits += new Array((+pat[j]) + 1).join(on ? '1' : '0');
+        on = !on;
+      }
+    });
+    return bits;
+  }
+  function barcodeSvg(text){
+    var bits = code128bits(text), rects = '', x = 0;
+    while (x < bits.length){
+      if (bits[x] === '1'){
+        var w = 1;
+        while (bits[x+w] === '1') w++;
+        rects += '<rect x="'+x+'" y="0" width="'+w+'" height="100" fill="#000"/>';
+        x += w;
+      } else x++;
+    }
+    return '<svg class="lbc" viewBox="0 0 '+bits.length+' 100" preserveAspectRatio="none">'+rects+'</svg>';
+  }
+
+  function printLabels(){
+    var rows = viewIdx();
+    if (!rows.length){ toast('אין מיקומים להדפסה', true); return; }
+    var count = rows.reduce(function(a,i){ return a + (data[i].shelves || 1); }, 0);
+    if (count > 600 && !confirm('עומדות להיות מודפסות ' + count + ' מדבקות. להמשיך?')) return;
+
+    var html = '';
+    rows.forEach(function(i){
+      var d = data[i];
+      codesFor(d.col, d.shelves).forEach(function(code){
+        html += '<div class="label">' +
+                  '<div class="lcode">' + esc(code) + '</div>' +
+                  barcodeSvg(code) +
+                  '<div class="ldesc">' + esc(d.desc || '') + '</div>' +
+                '</div>';
+      });
+    });
+    document.getElementById('printArea').innerHTML = html;
+    toast('נשלח להדפסה — ' + count + ' מדבקות');
+    setTimeout(function(){ window.print(); }, 120);
+  }
+
+  searchEl.addEventListener('input', render);
+  sortEl.addEventListener('change', render);
+  document.getElementById('labels').onclick = printLabels;
+
+  var descChips = document.getElementById('descChips');
+
+  function paintDescChips(){
+    if (step !== 3){ descChips.innerHTML = ''; return; }
+    var seen = {}, list = [];
+    for (var i = data.length - 1; i >= 0 && list.length < 6; i--){
+      var t = (data[i].desc || '').trim();
+      if (!t || seen[t]) continue;
+      seen[t] = 1; list.push(t);
+    }
+    var html = list.map(function(t){
+      return '<button type="button" class="dchip" data-t="'+esc(t)+'">'+esc(t)+'</button>';
+    }).join('');
+    html += '<button type="button" class="dchip none" data-t="">בלי תאור</button>';
+    descChips.innerHTML = html;
+  }
+
+  descChips.addEventListener('click', function(e){
+    var b = e.target.closest('.dchip');
+    if (!b) return;
+    field.value = b.getAttribute('data-t');
+    submit();
+  });
+
+  /* ---------- כתיבה בעברית ממקלדת אנגלית ---------- */
+  var heToggle = document.getElementById('heToggle');
+  var HE_MAP = {
+    q:'/', w:"'", e:'ק', r:'ר', t:'א', y:'ט', u:'ו', i:'ן', o:'ם', p:'פ',
+    a:'ש', s:'ד', d:'ג', f:'כ', g:'ע', h:'י', j:'ח', k:'ל', l:'ך', ';':'ף', "'":',',
+    z:'ז', x:'ס', c:'ב', v:'ה', b:'נ', n:'מ', m:'צ', ',':'ת', '.':'ץ', '/':'.'
+  };
+  var heOn = recallFlag('amoda.he', true);
+
+  function recallFlag(key, dflt){
+    try {
+      var v = localStorage.getItem(key);
+      return v === null ? dflt : v === '1';
+    } catch(e){ return dflt; }
+  }
+  function paintHeToggle(){
+    heToggle.style.display = (step === 3) ? 'inline-block' : 'none';
+    heToggle.textContent = 'כתיבה בעברית: ' + (heOn ? 'פועל' : 'כבוי');
+    heToggle.style.borderColor = heOn ? 'var(--mark)' : '';
+    heToggle.style.color = heOn ? 'var(--mark)' : '';
+  }
+  heToggle.onclick = function(){
+    heOn = !heOn;
+    try { localStorage.setItem('amoda.he', heOn ? '1' : '0'); } catch(e){}
+    paintHeToggle();
+    hint.textContent = heOn
+      ? 'המקלדת יכולה להישאר באנגלית — הקש כרגיל וייכתב בעברית'
+      : 'ההמרה כבויה — מה שתקיש ייכתב כמו שהוא';
+    field.focus();
+  };
+
+  field.addEventListener('keydown', function(e){
+    if (step !== 3 || !heOn) return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (!e.key || e.key.length !== 1) return;
+    var he = HE_MAP[e.key.toLowerCase()];
+    if (!he) return;
+    e.preventDefault();
+    var s = field.selectionStart, t = field.selectionEnd, val = field.value;
+    field.value = val.slice(0, s) + he + val.slice(t);
+    field.selectionStart = field.selectionEnd = s + he.length;
+  });
+
+  /* ---------- טווח עמודות ---------- */
+  function parseToken(t){
+    t = t.trim().toUpperCase();
+    var m = t.match(/^(\d+)([A-Z]?)$/);
+    if (m) return {order:'na', num:parseInt(m[1],10), alpha:m[2], width:m[1].length};
+    m = t.match(/^([A-Z])(\d*)$/);
+    if (m) return {order:'an', alpha:m[1], num:m[2] === '' ? null : parseInt(m[2],10), width:m[2].length};
+    return null;
+  }
+  function expandRange(text){
+    var parts = text.split(/\s*(?:\.\.|עד|-|–)\s*/).filter(function(x){ return x !== ''; });
+    if (parts.length !== 2) return null;
+    var A = parts[0].trim().toUpperCase(), B = parts[1].trim().toUpperCase();
+    if (!A || !B) return null;
+
+    var out = genericRange(A, B) || crossRange(A, B);
+    if (!out || out.length < 2 || out.length > 500) return null;
+    return out;
+  }
+
+  /* משנה רק את החלק שנבדל בין שני הקצוות: 1RA1-1RC1 → 1RA1, 1RB1, 1RC1 */
+  function genericRange(A, B){
+    var p = 0;
+    while (p < A.length && p < B.length && A[p] === B[p]) p++;
+    var s = 0;
+    while (s < A.length - p && s < B.length - p && A[A.length-1-s] === B[B.length-1-s]) s++;
+
+    var pre = A.slice(0, p), suf = A.slice(A.length - s);
+    var m1 = A.slice(p, A.length - s), m2 = B.slice(p, B.length - s);
+    if (!m1 || !m2) return null;
+
+    var out = [], i;
+    if (/^\d+$/.test(m1) && /^\d+$/.test(m2)){
+      var n1 = parseInt(m1,10), n2 = parseInt(m2,10);
+      var lo = Math.min(n1,n2), hi = Math.max(n1,n2);
+      if (hi - lo > 499) return null;
+      var pad = (m1[0] === '0' || m2[0] === '0') ? Math.max(m1.length, m2.length) : 0;
+      for (i = lo; i <= hi; i++){
+        var num = String(i);
+        while (num.length < pad) num = '0' + num;
+        out.push(pre + num + suf);
+      }
+      return out;
+    }
+    if (/^[A-Z]$/.test(m1) && /^[A-Z]$/.test(m2)){
+      var c1 = m1.charCodeAt(0), c2 = m2.charCodeAt(0);
+      var la = Math.min(c1,c2), lb = Math.max(c1,c2);
+      for (i = la; i <= lb; i++) out.push(pre + String.fromCharCode(i) + suf);
+      return out;
+    }
+    return null;
+  }
+
+  /* שני החלקים נבדלים: 1A-8B → כל השילובים 1A, 1B, 2A … 8B */
+  function crossRange(A, B){
+    var a = parseToken(A), b = parseToken(B);
+    if (!a || !b || a.order !== b.order) return null;
+
+    var nums = [], alphas = [], i;
+    if (a.num === null || b.num === null){
+      if (a.num !== b.num) return null;
+      nums = [null];
+    } else {
+      var lo = Math.min(a.num, b.num), hi = Math.max(a.num, b.num);
+      if (hi - lo > 400) return null;
+      for (i = lo; i <= hi; i++) nums.push(i);
+    }
+
+    if (!a.alpha && !b.alpha) alphas = [''];
+    else if (!a.alpha || !b.alpha) return null;
+    else {
+      var c1 = a.alpha.charCodeAt(0), c2 = b.alpha.charCodeAt(0);
+      for (i = Math.min(c1,c2); i <= Math.max(c1,c2); i++) alphas.push(String.fromCharCode(i));
+    }
+
+    var out = [];
+    nums.forEach(function(n){
+      alphas.forEach(function(al){
+        out.push(a.order === 'na' ? (n === null ? al : String(n) + al)
+                                  : (n === null ? al : al + String(n)));
+      });
+    });
+    return out;
+  }
+
+
+  /* ---------- הדפסת שלט איתור (לרוחב) ---------- */
+  var LOGO = 'data:image/png;base64,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';
+
+  function qrSvg(text){
+    var m;
+    try { m = QR.matrix(text); } catch(e){ return ''; }
+    var n = m.length, rects = '';
+    for (var r=0;r<n;r++){
+      var c = 0;
+      while (c < n){
+        if (m[r][c]){
+          var w = 1;
+          while (c + w < n && m[r][c+w]) w++;
+          rects += '<rect x="'+c+'" y="'+r+'" width="'+w+'" height="1"/>';
+          c += w;
+        } else c++;
+      }
+    }
+    var q = 2;
+    return '<svg class="qr" viewBox="'+(-q)+' '+(-q)+' '+(n+q*2)+' '+(n+q*2)+'" shape-rendering="crispEdges">' +
+           '<rect x="'+(-q)+'" y="'+(-q)+'" width="'+(n+q*2)+'" height="'+(n+q*2)+'" fill="#fff"/>' +
+           '<g fill="#000">'+rects+'</g></svg>';
+  }
+
+  /* מדבקה 10×5: ציור אחד שנמתח לגודל הדף — נראה זהה על מדבקה אמיתית ועל גיליון רגיל */
+  function labelSvg(code, desc){
+    code = String(code || '');
+    desc = String(desc || '');
+    var AVAIL = 58;                                   // רוחב פנוי לקוד ביחידות הציור
+    var fs = Math.min(21, AVAIL / (code.length * 0.68));
+    var dfs = desc ? Math.max(3.2, Math.min(7, 58 / (desc.length * 0.5))) : 0;
+
+    var m = null;
+    try { m = QR.matrix(code); } catch(e){}
+    var qr = '';
+    if (m){
+      var n = m.length, QS = 30, u = QS / n;
+      for (var r=0;r<n;r++){
+        var c = 0;
+        while (c < n){
+          if (m[r][c]){
+            var wd = 1;
+            while (c + wd < n && m[r][c+wd]) wd++;
+            qr += '<rect x="'+(6 + c*u).toFixed(3)+'" y="'+(15.5 + r*u).toFixed(3)+
+                  '" width="'+(wd*u).toFixed(3)+'" height="'+u.toFixed(3)+'"/>';
+            c += wd;
+          } else c++;
+        }
+      }
+      qr = '<g fill="#000">'+qr+'</g>';
+    }
+
+    return '<svg class="labelsvg" viewBox="0 0 100 50" xmlns="http://www.w3.org/2000/svg">' +
+             '<rect x="0" y="0" width="100" height="50" fill="#fff"/>' +
+             '<image href="'+LOGO+'" x="83" y="1.5" width="15" height="11.5" preserveAspectRatio="xMidYMid meet"/>' +
+             '<line x1="3" y1="13.6" x2="79" y2="13.6" stroke="#e30613" stroke-width="0.6"/>' +
+             qr +
+             '<text x="67" y="32" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" ' +
+                   'font-weight="900" font-size="'+fs.toFixed(2)+'" fill="#000">'+esc(code)+'</text>' +
+             (desc ? '<text x="67" y="44" text-anchor="middle" direction="rtl" ' +
+                     'font-family="Arial, sans-serif" font-size="'+dfs.toFixed(2)+'" fill="#222">'+esc(desc)+'</text>' : '') +
+           '</svg>';
+  }
+
+  function signHtml(code, desc){
+    if (signSize === 'label') return '<section class="sign labelsign">' + labelSvg(code, desc) + '</section>';
+    var n = String(code).length;
+    var cls = n <= 4 ? '' : (' len' + Math.min(8, n));
+    return '<section class="sign'+cls+'">' +
+             '<header><img src="'+LOGO+'" alt="אפקון"></header>' +
+             '<div class="signcode">'+esc(code)+'</div>' +
+             (desc ? '<div class="signdesc">'+esc(desc)+'</div>' : '<div class="signdesc"></div>') +
+             '<div class="signcodes"><div class="qrwrap">'+qrSvg(code)+'</div></div>' +
+           '</section>';
+  }
+
+  function printSigns(items){
+    if (!items.length){ toast('לא נבחר איתור', true); return; }
+    document.getElementById('signArea').innerHTML = items.map(function(it){
+      return signHtml(it.code, it.desc);
+    }).join('');
+    document.body.classList.add('sign-mode');
+    document.body.classList.toggle('label-mode', signSize === 'label');
+    var ps = document.getElementById('pageStyle');
+    if (!ps){ ps = document.createElement('style'); ps.id = 'pageStyle'; document.head.appendChild(ps); }
+    ps.textContent = (signSize === 'label')
+      ? '@page{size:100mm 50mm;margin:0}'
+      : '@page{size:A4 landscape;margin:10mm}';
+    pickModal.hidden = true;
+    setTimeout(function(){ window.print(); }, 150);
+  }
+
+  var signSize = 'a4';
+  document.getElementById('sizeBar').addEventListener('click', function(e){
+    var b = e.target.closest('.fbtn');
+    if (!b) return;
+    signSize = b.getAttribute('data-s');
+    Array.prototype.forEach.call(this.querySelectorAll('.fbtn'), function(x){
+      x.classList.toggle('sel', x === b);
+    });
+  });
+
+  var pickModal = document.getElementById('pickModal');
+  var pickList = document.getElementById('pickList');
+  var pickIdx = -1;
+
+  function openPicker(idx){
+    pickIdx = idx;
+    var d = data[idx];
+    document.getElementById('pickTitle').textContent = 'הדפסת שלט — עמודה ' + d.col;
+    pickList.innerHTML = codesFor(d.col, d.shelves).map(function(c){
+      return '<button type="button" class="dchip" data-c="'+esc(c)+'">'+esc(c)+'</button>';
+    }).join('');
+    pickModal.hidden = false;
+  }
+  pickList.addEventListener('click', function(e){
+    var b = e.target.closest('.dchip');
+    if (!b || pickIdx < 0) return;
+    printSigns([{code: b.getAttribute('data-c'), desc: data[pickIdx].desc}]);
+  });
+  document.getElementById('pickAll').onclick = function(){
+    if (pickIdx < 0) return;
+    var d = data[pickIdx];
+    printSigns(codesFor(d.col, d.shelves).map(function(c){ return {code:c, desc:d.desc}; }));
+  };
+  document.getElementById('pickClose').onclick = function(){ pickModal.hidden = true; };
+  pickModal.addEventListener('click', function(e){ if (e.target === pickModal) pickModal.hidden = true; });
+  window.addEventListener('afterprint', function(){
+    document.body.classList.remove('sign-mode');
+    document.body.classList.remove('label-mode');
+    var ps = document.getElementById('pageStyle');
+    if (ps) ps.textContent = '';
+  });
+
+  /* ---------- מפת המחסן ---------- */
+  var CELL = 26, COLS = 46, ROWS = 30;
+  var mapModal = document.getElementById('mapModal');
+  var mapSvg = document.getElementById('mapSvg');
+  var trayList = document.getElementById('trayList');
+  var mapSel = -1, traySel = -1, dragCtx = null;
+  var walls = [], wallDraft = null, wallDown = false;
+  var curFloor = 1;
+  function floorOf(d){ return d.mf || 1; }
+  function wallFloor(seg){ return seg[4] || 1; }
+
+  function aimWall(n){
+    if (!wallDraft) return;
+    // קו ישר בלבד: אופקי או אנכי, לפי הכיוון הדומיננטי
+    if (Math.abs(n.x - wallDraft[0]) >= Math.abs(n.y - wallDraft[1])){
+      wallDraft[2] = n.x; wallDraft[3] = wallDraft[1];
+    } else {
+      wallDraft[2] = wallDraft[0]; wallDraft[3] = n.y;
+    }
+  }
+
+  function commitWall(){
+    if (wallDraft && (wallDraft[0] !== wallDraft[2] || wallDraft[1] !== wallDraft[3])){
+      walls.push(wallDraft.slice(0,4).concat([curFloor]));
+      markDirty();
+    }
+    wallDraft = null; wallDown = false;
+    renderMap();
+  }
+
+  function placed(d){ return typeof d.mx === 'number' && typeof d.my === 'number'; }
+  function blkW(d){ return Math.max(1, d.mw || (d.mr ? 2 : 1)); }
+  function blkH(d){ return Math.max(1, d.mh || (d.mr ? 1 : 2)); }
+
+  function renderMap(){
+    var w = COLS * CELL, h = ROWS * CELL, i;
+    var g = '<rect x="0" y="0" width="'+w+'" height="'+h+'" fill="#0d1117"/>';
+    for (i=0;i<=COLS;i++){
+      g += '<line x1="'+(i*CELL)+'" y1="0" x2="'+(i*CELL)+'" y2="'+h+'" stroke="#1b2430" stroke-width="1"/>';
+    }
+    for (i=0;i<=ROWS;i++){
+      g += '<line x1="0" y1="'+(i*CELL)+'" x2="'+w+'" y2="'+(i*CELL)+'" stroke="#1b2430" stroke-width="1"/>';
+    }
+    walls.forEach(function(seg, wi){
+      if (wallFloor(seg) !== curFloor) return;
+      g += '<line class="wall" data-w="'+wi+'" x1="'+(seg[0]*CELL)+'" y1="'+(seg[1]*CELL)+
+           '" x2="'+(seg[2]*CELL)+'" y2="'+(seg[3]*CELL)+'"/>';
+    });
+    if (wallDraft){
+      g += '<line class="wallghost" x1="'+(wallDraft[0]*CELL)+'" y1="'+(wallDraft[1]*CELL)+
+           '" x2="'+(wallDraft[2]*CELL)+'" y2="'+(wallDraft[3]*CELL)+'"/>';
+    }
+    data.forEach(function(d, idx){
+      if (!placed(d) || floorOf(d) !== curFloor) return;
+      var x = d.mx*CELL, y = d.my*CELL, bw = blkW(d)*CELL, bh = blkH(d)*CELL;
+      g += '<g class="blk'+(idx===mapSel?' sel':'')+'" data-i="'+idx+'">' +
+             '<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+bh+'" rx="3"/>' +
+             '<text x="'+(x+bw/2)+'" y="'+(y+bh/2+4)+'" text-anchor="middle">'+esc(d.col)+'</text>' +
+             (idx===mapSel
+               ? '<rect class="grip" data-grip="'+idx+'" x="'+(x+bw-9)+'" y="'+(y+bh-9)+'" width="9" height="9"/>'
+               : '') +
+           '</g>';
+    });
+    mapSvg.setAttribute('viewBox','0 0 '+w+' '+h);
+    mapSvg.setAttribute('width', w);
+    mapSvg.setAttribute('height', h);
+    mapSvg.innerHTML = g;
+
+    var onFloor = data.filter(function(d){ return placed(d) && floorOf(d) === curFloor; }).length;
+    var wallsHere = walls.filter(function(s){ return wallFloor(s) === curFloor; }).length;
+    document.getElementById('floorNote').textContent =
+      'בקומה ' + curFloor + ': ' + onFloor + ' עמודות · ' + wallsHere + ' קירות';
+    Array.prototype.forEach.call(document.querySelectorAll('#floorBar .fbtn'), function(b){
+      b.classList.toggle('sel', +b.getAttribute('data-f') === curFloor);
+    });
+
+    var free = data.map(function(d,i){ return placed(d) ? null : i; }).filter(function(i){ return i !== null; });
+    document.getElementById('trayCount').textContent = free.length;
+    trayList.innerHTML = free.map(function(i){
+      return '<button type="button" class="dchip'+(i===traySel?' sel':'')+'" data-i="'+i+'">'+esc(data[i].col)+'</button>';
+    }).join('') || '<span style="color:var(--muted);font-size:13px">כל העמודות מוצבות</span>';
+  }
+
+  function nodeFromEvent(e){
+    var r = mapSvg.getBoundingClientRect();
+    var sx = (e.clientX - r.left) / r.width * COLS;
+    var sy = (e.clientY - r.top) / r.height * ROWS;
+    return {x: Math.max(0, Math.min(COLS, Math.round(sx))), y: Math.max(0, Math.min(ROWS, Math.round(sy)))};
+  }
+
+  function cellFromEvent(e){
+    var r = mapSvg.getBoundingClientRect();
+    var sx = (e.clientX - r.left) / r.width * COLS;
+    var sy = (e.clientY - r.top) / r.height * ROWS;
+    return {x: Math.max(0, Math.min(COLS-1, Math.floor(sx))), y: Math.max(0, Math.min(ROWS-1, Math.floor(sy)))};
+  }
+
+  trayList.addEventListener('click', function(e){
+    var b = e.target.closest('.dchip');
+    if (!b) return;
+    traySel = +b.getAttribute('data-i');
+    mapSel = -1;
+    renderMap();
+    document.getElementById('mapHint').textContent = 'נבחרה ' + data[traySel].col + ' — לחץ על המפה כדי להציב';
+  });
+
+  function resizeSel(dw, dh){
+    if (mapSel < 0){ toast('בחר קודם עמודה במפה', true); return; }
+    var d0 = data[mapSel];
+    var nw = Math.max(1, Math.min(COLS - d0.mx, blkW(d0) + dw));
+    var nh = Math.max(1, Math.min(ROWS - d0.my, blkH(d0) + dh));
+    d0.mw = nw; d0.mh = nh;
+    markDirty(); renderMap();
+  }
+  document.getElementById('mapTaller').onclick    = function(){ resizeSel(0, 1); };
+  document.getElementById('mapShorter').onclick   = function(){ resizeSel(0, -1); };
+  document.getElementById('mapWider').onclick     = function(){ resizeSel(1, 0); };
+  document.getElementById('mapNarrower').onclick  = function(){ resizeSel(-1, 0); };
+
+  mapSvg.addEventListener('pointerdown', function(e){
+    // לחיצה על קיר מוחקת אותו
+    if (e.target && e.target.classList && e.target.classList.contains('wall')){
+      walls.splice(+e.target.getAttribute('data-w'), 1);
+      markDirty(); renderMap();
+      toast('הקיר נמחק');
+      return;
+    }
+    if (e.target && e.target.classList && e.target.classList.contains('grip')){
+      var gi = +e.target.getAttribute('data-grip');
+      dragCtx = {idx: gi, resize: true, moved: false};
+      if (mapSvg.setPointerCapture){ try { mapSvg.setPointerCapture(e.pointerId); } catch(err){} }
+      return;
+    }
+    var blk = e.target.closest ? e.target.closest('.blk') : null;
+    if (blk){
+      mapSel = +blk.getAttribute('data-i');
+      traySel = -1;
+      var c = cellFromEvent(e);
+      dragCtx = {idx: mapSel, dx: c.x - data[mapSel].mx, dy: c.y - data[mapSel].my, moved: false};
+      if (mapSvg.setPointerCapture) { try { mapSvg.setPointerCapture(e.pointerId); } catch(err){} }
+      renderMap();
+      return;
+    }
+    if (traySel >= 0){          // נבחרה עמודה מהרשימה — הלחיצה מציבה אותה
+      var p = cellFromEvent(e);
+      data[traySel].mx = p.x; data[traySel].my = p.y; data[traySel].mf = curFloor;
+      mapSel = traySel; traySel = -1;
+      markDirty(); renderMap();
+      document.getElementById('mapHint').textContent = 'הוצבה ' + data[mapSel].col + '. בחר עמודה נוספת, או מתח קו על שטח ריק כדי לצייר קיר';
+      return;
+    }
+
+    // שטח ריק — מותחים קיר
+    e.preventDefault();
+    mapSel = -1;
+    var n = nodeFromEvent(e);
+    if (wallDraft){             // לחיצה שנייה סוגרת את הקו
+      aimWall(n);
+      commitWall();
+    } else {
+      wallDraft = [n.x, n.y, n.x, n.y];
+      wallDown = true;
+      if (mapSvg.setPointerCapture){ try { mapSvg.setPointerCapture(e.pointerId); } catch(err){} }
+      renderMap();
+    }
+  });
+  mapSvg.addEventListener('pointermove', function(e){
+    if (wallDraft){
+      e.preventDefault();
+      aimWall(nodeFromEvent(e));
+      renderMap();
+      return;
+    }
+    if (!dragCtx) return;
+    var c = cellFromEvent(e);
+    if (dragCtx.resize){
+      var d0 = data[dragCtx.idx];
+      var nw = Math.max(1, Math.min(COLS - d0.mx, c.x - d0.mx + 1));
+      var nh = Math.max(1, Math.min(ROWS - d0.my, c.y - d0.my + 1));
+      if (nw !== blkW(d0) || nh !== blkH(d0)){
+        d0.mw = nw; d0.mh = nh; dragCtx.moved = true; renderMap();
+      }
+      return;
+    }
+    var nx = Math.max(0, Math.min(COLS - blkW(data[dragCtx.idx]), c.x - dragCtx.dx));
+    var ny = Math.max(0, Math.min(ROWS - blkH(data[dragCtx.idx]), c.y - dragCtx.dy));
+    if (nx !== data[dragCtx.idx].mx || ny !== data[dragCtx.idx].my){
+      data[dragCtx.idx].mx = nx; data[dragCtx.idx].my = ny;
+      dragCtx.moved = true;
+      renderMap();
+    }
+  });
+  mapSvg.addEventListener('pointercancel', function(){ wallDown = false; dragCtx = null; });
+  mapSvg.addEventListener('dragstart', function(e){ e.preventDefault(); });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && wallDraft){ wallDraft = null; wallDown = false; renderMap(); }
+  });
+
+  mapSvg.addEventListener('pointerup', function(){
+    if (wallDraft){
+      // גרירה שהסתיימה הרחק מנקודת ההתחלה סוגרת את הקו;
+      // לחיצה במקום משאירה אותו פתוח ללחיצה שנייה
+      if (wallDown && (wallDraft[0] !== wallDraft[2] || wallDraft[1] !== wallDraft[3])) commitWall();
+      wallDown = false;
+      return;
+    }
+    if (dragCtx && dragCtx.moved) markDirty();
+    dragCtx = null;
+  });
+
+  document.getElementById('mapUndoWall').onclick = function(){
+    for (var i = walls.length - 1; i >= 0; i--){
+      if (wallFloor(walls[i]) === curFloor){ walls.splice(i,1); markDirty(); renderMap(); return; }
+    }
+    toast('אין קירות בקומה הזאת', true);
+  };
+  document.getElementById('mapClearWalls').onclick = function(){
+    if (!walls.some(function(s){ return wallFloor(s) === curFloor; })){ toast('אין קירות בקומה הזאת', true); return; }
+    if (!confirm('למחוק את כל הקירות בקומה ' + curFloor + '?')) return;
+    walls = walls.filter(function(s){ return wallFloor(s) !== curFloor; });
+    markDirty(); renderMap();
+  };
+
+  document.getElementById('floorBar').addEventListener('click', function(e){
+    var b = e.target.closest('.fbtn');
+    if (!b) return;
+    curFloor = +b.getAttribute('data-f');
+    mapSel = -1; wallDraft = null; wallDown = false;
+    renderMap();
+  });
+
+  document.getElementById('mapRotate').onclick = function(){
+    if (mapSel < 0){ toast('בחר קודם עמודה במפה', true); return; }
+    var d0 = data[mapSel];
+    var w0 = blkW(d0), h0 = blkH(d0);
+    d0.mr = !d0.mr; d0.mw = h0; d0.mh = w0;
+    markDirty(); renderMap();
+  };
+  document.getElementById('mapRemove').onclick = function(){
+    if (mapSel < 0){ toast('בחר קודם עמודה במפה', true); return; }
+    delete data[mapSel].mx; delete data[mapSel].my; delete data[mapSel].mr;
+    delete data[mapSel].mw; delete data[mapSel].mh;
+    mapSel = -1; markDirty(); renderMap();
+  };
+  document.getElementById('mapAuto').onclick = function(){
+    if (!confirm('לסדר בקומה ' + curFloor + ' את העמודות שעדיין לא הוצבו?')) return;
+    var x = 1, y = 1;
+    sortedIdx().filter(function(i){ return !placed(data[i]); }).forEach(function(i){
+      data[i].mx = x; data[i].my = y; data[i].mr = false; data[i].mf = curFloor;
+      x += 2;
+      if (x > COLS - 2){ x = 1; y += 3; if (y > ROWS - 3) y = 1; }
+    });
+    markDirty(); renderMap();
+  };
+  document.getElementById('mapPrint').onclick = function(){
+    var floors = [];
+    [1,2].forEach(function(fl){
+      var has = data.some(function(d){ return placed(d) && floorOf(d) === fl; }) ||
+                walls.some(function(s){ return wallFloor(s) === fl; });
+      if (has) floors.push(fl);
+    });
+    if (!floors.length){ toast('אין מה להדפיס — המפה ריקה', true); return; }
+
+    var keep = curFloor, pages = '';
+    floors.forEach(function(fl){
+      curFloor = fl;
+      renderMap();
+      pages += '<section class="sign mapsign">' +
+                 '<header><img src="'+LOGO+'" alt="אפקון">' +
+                   '<span class="floortag">קומה ' + fl + '</span></header>' +
+                 '<div class="mapprint">' + mapSvg.outerHTML.replace('id="mapSvg"','') + '</div>' +
+               '</section>';
+    });
+    curFloor = keep; renderMap();
+    document.getElementById('signArea').innerHTML = pages;
+    document.body.classList.add('sign-mode');
+    document.body.classList.remove('label-mode');
+    var ps = document.getElementById('pageStyle');
+    if (!ps){ ps = document.createElement('style'); ps.id = 'pageStyle'; document.head.appendChild(ps); }
+    ps.textContent = '@page{size:A4 landscape;margin:8mm}';
+    mapModal.hidden = true;
+    setTimeout(function(){ window.print(); }, 150);
+  };
+  document.getElementById('mapBtn').onclick = function(){
+    if (!data.length){ toast('קודם צריך להוסיף עמודות', true); return; }
+    mapSel = -1; traySel = -1;
+    mapModal.hidden = false;
+    renderMap();
+  };
+  document.getElementById('mapClose').onclick = function(){ mapModal.hidden = true; };
+  mapModal.addEventListener('click', function(e){ if (e.target === mapModal) mapModal.hidden = true; });
+
+  function stamp(){
+
+    var now = new Date();
+    return now.toLocaleDateString('he-IL') + ' ' +
+           now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+  }
+
+  function saveHtml(){
+    try {
+      var when = stamp();
+      var clone = document.documentElement.cloneNode(true);
+      clone.querySelector('#tbody').innerHTML = '';
+      clone.querySelector('#preview').innerHTML = '';
+      var pa = clone.querySelector('#printArea'); if (pa) pa.innerHTML = '';
+      var sf = clone.querySelector('#search'); if (sf) sf.removeAttribute('value');
+      var f = clone.querySelector('#field'); if (f) f.removeAttribute('value');
+      clone.querySelector('#saved-data').textContent = JSON.stringify({saved: when, rows: data, lastShelves: lastShelves, lastDesc: lastDesc, walls: walls});
+      download(new Blob(['<!DOCTYPE html>\n' + clone.outerHTML], {type:'text/html;charset=utf-8'}), 'amoda.html');
+      markClean('נשמר: ' + when);
+      toast('amoda.html ירד — המשך לעבוד מהקובץ החדש');
+    } catch(e){ toast('השמירה נכשלה. נסה שוב', true); }
+  }
+
+  function exportXlsx(){
+    if (!data.length){ toast('אין נתונים לייצוא', true); return; }
+    try {
+      var bytes = buildXlsx(sortedData());
+      download(new Blob([bytes], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), 'amoda.xlsx');
+      var now = new Date();
+      markClean('ירד לאקסל: ' + stamp());
+      toast('הקובץ amoda.xlsx ירד למחשב');
+    } catch(e){ toast('הייצוא נכשל. נסה שוב', true); }
+  }
+
+  function importXlsx(file){
+    var reader = new FileReader();
+    reader.onload = function(){
+      readXlsx(new Uint8Array(reader.result)).then(function(rows){
+        if (!rows.length){ toast('לא נמצאו עמודות בקובץ', true); return; }
+        var added = 0, skipped = 0;
+        rows.forEach(function(r){
+          if (data.some(function(d){ return d.col === r.col; })) { skipped++; return; }
+          data.push(r); added++;
+        });
+        render();
+        if (data.length) lastShelves = data[data.length-1].shelves;
+        if (data.length) lastDesc = data[data.length-1].desc || '';
+        if (added) markDirty();
+        toast('נטענו ' + added + ' עמודות' + (skipped ? ' · ' + skipped + ' כבר היו ברשימה' : ''));
+        ask(1);
+      }).catch(function(){
+        toast('לא הצלחתי לקרוא את הקובץ. צריך קובץ xlsx עם עמודות עמודה ומדף', true);
+      });
+    };
+    reader.onerror = function(){ toast('קריאת הקובץ נכשלה', true); };
+    reader.readAsArrayBuffer(file);
+  }
+
+  document.getElementById('go').onclick = submitOnce;
+  backBtn.onclick = function(){ ask(step === 3 ? 2 : 1); };
+  document.getElementById('export').onclick = exportXlsx;
+  document.getElementById('saveHtml').onclick = saveHtml;
+  document.getElementById('upload').onclick = function(){ picker.click(); };
+  picker.onchange = function(){
+    if (picker.files && picker.files[0]) importXlsx(picker.files[0]);
+    picker.value = '';
+  };
+  document.getElementById('clear').onclick = function(){
+    if (!data.length){ toast('הרשימה כבר ריקה'); return; }
+    var pw = prompt('מחיקת כל הרשימה — הקש סיסמה:');
+    if (pw === null) return;
+    if (pw.trim() !== PASSWORD){ toast('סיסמה שגויה. שום דבר לא נמחק', true); return; }
+    if (!confirm('אישור אחרון: למחוק את כל ' + data.length + ' העמודות?')) return;
+    data = []; editIndex = -1; render(); markDirty(); ask(1);
+    try { localStorage.removeItem('amoda.state'); } catch(e){}
+    toast('הרשימה נוקתה');
+  };
+  cancelBtn.onclick = cancelEdit;
+  var submitting = false;
+  function submitOnce(){
+    if (submitting) return;      // מונע כפילות מאותה הקשה, לא מהקשה מהירה חוזרת
+    submitting = true;
+    try { submit(); } finally { submitting = false; }
+  }
+  function isEnter(e){
+    return e.key === 'Enter' || e.key === 'Go' || e.key === 'Done' || e.key === 'Next' ||
+           e.keyCode === 13 || e.which === 13;
+  }
+
+  // הקשה על Enter תופסת גם אם הפוקוס ברח מהשדה
+  document.addEventListener('keydown', function(e){
+    if (!isEnter(e)) return;
+    var t = e.target;
+    if (t === searchEl) return;                       // Enter בחיפוש לא שומר עמודה
+    if (t && t.tagName === 'BUTTON' && t !== document.getElementById('go')) return;
+    e.preventDefault();
+    submitOnce();
+  }, true);
+
+  field.addEventListener('input', livePreview);
+  window.addEventListener('beforeunload', function(e){
+    if (dirty){ e.preventDefault(); e.returnValue = ''; }
+  });
+
+  var restored = '';
+  try {
+    var hash = location.hash || '';
+    var m = hash.match(/[#&]d=([A-Za-z0-9\-_]+)/);
+    if (m && unpackState(JSON.parse(unb64url(m[1])))){
+      restored = 'link';
+      history.replaceState(null, '', location.pathname + location.search);
+      saveLocal();
+    }
+  } catch(e){}
+
+  if (!restored){
+    var local = loadLocal();
+    if (local && (!data.length || local.r.length) && unpackState(local)) restored = 'local';
+  }
+
+  render();
+  if (restored === 'link'){
+    markClean('נטען מהקישור — ' + data.length + ' עמודות');
+    toast('הרשימה נטענה מהקישור');
+  } else if (restored === 'local'){
+    markClean('נטען מהמכשיר הזה — ' + data.length + ' עמודות');
+  } else if (savedStamp){
+    markClean('נשמר: ' + savedStamp);
+  }
+  ask(1);
+})();
+</script>
+</body>
+</html>
